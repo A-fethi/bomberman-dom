@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bomberman Lobby</title>
+</head>
+<body>
+  <h1>Join Game</h1>
+  <form id="join-form">
+    <input type="text" id="nickname" placeholder="Enter nickname" required />
+    <button type="submit">Join</button>
+  </form>
+
+  <div id="lobby" style="display:none;">
+    <h2>Lobby</h2>
+    <p id="nickname-display"></p>
+    <p>Connected players:</p>
+    <ul id="player-list"></ul>
+  </div>
+
+  <p id="error" style="color:red;"></p>
+
+  <script src="client.js"></script>
+</body>
+</html>
