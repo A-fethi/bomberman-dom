@@ -24,9 +24,10 @@ form.addEventListener('submit', (e) => {
     if (msg.type === 'error') {
       if (msg.reason === 'room_full') {
         errorMsg.textContent = 'The room is full. Please try again later.';
-      }
-      if (msg.reason === 'invalid_nickname') {
+      } else if (msg.reason === 'invalid_nickname') {
         errorMsg.textContent = 'Invalid nickname.';
+      } else if (msg.reason === 'nickname_taken') {
+        errorMsg.textContent = 'This nickname is already taken. Please choose another.';
       }
       return;
     }
@@ -35,6 +36,7 @@ form.addEventListener('submit', (e) => {
       form.style.display = 'none';
       lobby.style.display = 'block';
       nicknameDisplay.textContent = `You are: ${msg.nickname}`;
+      errorMsg.textContent = '';
     }
 
     if (msg.type === 'players') {

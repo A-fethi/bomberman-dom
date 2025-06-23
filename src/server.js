@@ -40,7 +40,16 @@ wss.on('connection', (ws) => {
 
       if (data.type === 'join') {
         const nickname = data.nickname?.trim();
-        if (!nickname) return ws.send(JSON.stringify({ type: 'error', reason: 'invalid_nickname' }));
+        if (!nickname) {
+          ws.send(JSON.stringify({ type: 'error', reason: 'invalid_nickname' }));
+          return;
+        }
+
+        // Check if nickname is already taken
+        if ([...players.values()].includes(nickname)) {
+          ws.send(JSON.stringify({ type: 'error', reason: 'nickname_taken' }));
+          return;
+        }
 
         players.set(ws, nickname);
         console.log(`Player joined: ${nickname}`);
