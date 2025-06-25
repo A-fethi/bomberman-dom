@@ -54,7 +54,6 @@ function WaitingPage() {
     Vnode("div", { class: "spinner" }, []),
   ]);
 }
-
 export function waitingpage() {
   setupWebSocket(getPlayers, setPlayers);
   render(WaitingPage, document.body);
