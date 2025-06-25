@@ -1,0 +1,101 @@
+/* Spinner animation */
+.spinner {
+  margin: 32px auto;
+  width: 48px;
+  height: 48px;
+  border: 6px solid #eee;
+  border-top: 6px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.bomberman-dom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #f9f9f9;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 24px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 24px;
+}
+
+.create-room-form {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+#roomName {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+#roomName:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+#createRoomBtn {
+    padding: 12px 24px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#createRoomBtn:hover {
+    background-color: #2980b9;
+}
+
+.room-list h2 {
+    color: #555;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+#rooms {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+}
+
+#rooms li {
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+here
