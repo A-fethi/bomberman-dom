@@ -17,7 +17,7 @@ const mimeTypes = {
 
 const server = http.createServer((req, res) => {
   let filePath;
-  if (req.url === "/" || req.url === "/index.html" || req.url === "/rooms") {
+  if (req.url === "/" || req.url === "/index.html") {
     filePath = path.join(__dirname, "../templates/index.html");
   } else if (req.url === "/styles.css") {
     filePath = path.join(__dirname, "../templates/styles.css");
