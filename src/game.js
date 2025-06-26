@@ -1,89 +1,129 @@
-import { Vnode, render } from "../node_modules/all4one-js/index.js";
-import { Map } from "./map.js";
+import { Vnode, createState, render, batch } from "../node_modules/all4one-js/index.js";
+// import { Map } from "./map.js";
 import { Player } from "./player.js";
+// import { Bomb } from "./Bomb.js";
+
+
+const [getGameRunning, setGameRunning] = createState(false);
+const [getPaused, setPaused] = createState(false);
+const [getTimer, setTimer] = createState(0);
+const [getScore, setScore] = createState(0);
+const [getLives, setLives] = createState(3);
+const [getMap, setMap] = createState([])
+const [getBombs, setBombs] = createState([])
+const [getPlayer, setPlayer] = createState({ x: 1, y: 1, direction: 'right' })
+
+let lastFrameTime = 0
+
+function start() {
+  batch(() => {
+    setGameRunning(true);
+    setPaused(false);
+    setTimer(0);
+    setScore(0);
+    setLives(3);
+    setPlayer({ x: 1, y: 1 });
+    setBombs([]);
+    setMap(generateMap());
+  })
+  lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function pause() {
+  setPaused(true);
+  setGameRunning(false);
+}
+
+function resume() {
+  setPaused(false);
+  setGameRunning(true);
+  lastFrameTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function restart() {
+  batch(() => {
+    setGameRunning(false);
+    setPaused(false);
+    setTimer(0);
+    setScore(0);
+    setLives(3);
+    setPlayer({ x: 1, y: 1 });
+    setBombs([]);
+    setMap(generateMap());
+  });
+}
+
+function gameLoop(timestamp) {
+  if (!getGameRunning()) return;
+  const deltaTime = timestamp - lastFrameTime;
+  lastFrameTime = timestamp;
+  setTimer(getTimer() + deltaTime / 1000);
+  requestAnimationFrame(gameLoop);
+}
+
+function generateMap() {
+  const width = 20, height = 20;
+  const map = [];
+  for (let y = 0; y < height; y++) {
+    map[y] = [];
+    for (let x = 0; x < width; x++) {
+      let cellType = 'E';
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+        cellType = 'W';
+      } else if (x % 2 === 0 && y % 2 === 0) {
+        cellType = 'W';
+      } else if (Math.random() < 0.3) {
+        cellType = 'B';
+      }
+      if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
+        cellType = 'S';
+      }
+      map[y][x] = cellType;
+    }
+  }
+  return map;
+}
+
 
 // Main App Vnode
-const App = () => {
-    return Vnode("div", {}, [
-      Vnode("div", { id: "start-menu" }, [
-        Vnode("h1", {}, "Bomberman Game"),
-        Vnode("button", { id: "start-btn", onClick: () => game.start()
-          }, "Start Game"),
-      ]),
-      Vnode(
-        "div",
-        { id: "pause-menu", style: "display: none;" },
-        [
-          Vnode("h1", {}, "Paused"),
-          Vnode("button", { id: "resume-btn" }, "Continue"),
-          Vnode("button", { id: "restart-btn" }, "Restart"),
-        ]
-      ),
-      Vnode("div", { id: "scoreboard" }, [
-        Vnode("div", { id: "timer", title: "Timer" }, "⏲️: 00:00"),
-        Vnode("div", { id: "score", title: "Score" }, "⭐: 0"),
-        Vnode("div", { id: "lives", title: "Health" }, "❤️: 3"),
-        Vnode("div", { id: "level", title: "level" }, "⚔️: 1"),
-        Vnode("div", { id: "pause-btn", title: "Pause" }, "⏸️"),
-      ]),
-      Vnode("div", { id: "game_container" }),
-    ]);
+function App() {
+  const timer = getTimer();
+  const score = getScore();
+  const lives = getLives();
+  const isRunning = getGameRunning();
+  const isPaused = getPaused();
+  const bombs = getBombs();
+  const player = getPlayer();
+
+  const map = getMap();
+  return Vnode("div", {}, [
+    !isRunning && !isPaused && Vnode("div", { id: "start-menu" }, [
+      Vnode("h1", {}, "Bomberman Game"),
+      Vnode("button", {
+        id: "start-btn", onClick: start, class: "menu-button"
+      }, "Start Game"),
+    ]),
+    isPaused && Vnode(
+      "div",
+      { id: "pause-menu" },
+      [
+        Vnode("h1", {}, "Paused"),
+        Vnode("button", { id: "resume-btn", onClick: resume, class: "menu-button" }, "Continue"),
+        Vnode("button", { id: "restart-btn", onClick: restart, class: "menu-button" }, "Restart"),
+      ]
+    ),
+    isRunning && Vnode("div", { id: "scoreboard", style: "display: flex" }, [
+      Vnode("div", { id: "timer", title: "Timer" }, `⏲️: ${Math.floor(timer)}s`),
+      Vnode("div", { id: "score", title: "Score" }, `⭐: ${score}`),
+      Vnode("div", { id: "lives", title: "Health" }, `❤️: ${lives}`),
+      Vnode("button", { id: "pause-btn", title: "Pause", onClick: pause }, "⏸️"),
+    ]),
+    isRunning && Vnode("div", { id: "game_container" }, [
+      Vnode("p", {}, "Just a test to see if the game works"), 
+    ]),
+  ]);
 }
 
 render(App, document.body);
-
-class Game {
-    constructor(gameContainer) {
-        this.gameRunning = false;
-        this.timer = 0;
-        this.score = 0;
-        this.lives = 3;
-        this.container = document.getElementById(gameContainer);
-        this.g_map = new Map(gameContainer, this);
-        this.player = null;
-        document.getElementById("pause-btn").addEventListener("click", () => this.pause());
-        document.getElementById("resume-btn").addEventListener("click", () => this.resume());
-        document.getElementById("restart-btn").addEventListener("click", () => this.restart());
-    }
-
-    start() {
-        document.getElementById("start-menu").style.display = "none";
-        document.getElementById("scoreboard").style.display = "flex";
-        this.gameRunning = true;
-        this.g_map.generateMap();
-        this.timer = 0;
-        this.lastFrameTime = performance.now();
-        requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
-
-    }
-
-    pause() {
-        this.gameRunning = false;
-        document.getElementById("pause-menu").style.display = "block";
-    }
-
-    resume() {
-        document.getElementById("pause-menu").style.display = "none";
-        this.gameRunning = true;
-    }
-
-    restart() {
-        location.reload(); 
-    }
-
-    gameLoop(timestamp) {
-        if (!this.gameRunning) return;
-        const deltaTime = timestamp - this.lastFrameTime;
-        this.lastFrameTime = timestamp;
-        this.update(deltaTime);
-        document.getElementById("timer").innerHTML = `⏲️: ${Math.floor(this.timer)}s`;
-        requestAnimationFrame((newTimestamp) => this.gameLoop(newTimestamp)); // Pass new timestamp
-    }
-
-    update(deltaTime) {
-        this.timer += deltaTime / 1000;
-    }
-}
-
-export const game = new Game("game_container");
-document.getElementById("start-btn").addEventListener("click", () => game.start());
