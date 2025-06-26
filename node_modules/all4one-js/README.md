@@ -27,7 +27,7 @@ The core ideas are:
 
 ---
 ## Installing 
-* ``` npm install zonejs ```
+* ``` npm i all4one-js ```
 
 ---
 

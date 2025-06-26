@@ -9,26 +9,26 @@
  */
 export function patch(parent, oldNode, newNode) {
   if (!parent) return null;
-  
+
   // empty/array nodes handling ajmi
   if (newNode == null) return document.createTextNode('');
   if (Array.isArray(newNode)) return patchFragment(parent, oldNode, newNode);
-  
+
   // Handle text nodes
   if (typeof newNode !== 'object') return patchText(parent, oldNode, newNode);
-  
+
   // Handle component nodes
   if (typeof newNode.tag === 'function') {
     const componentVNode = newNode.tag(newNode.attrs);
     componentVNode.hooks = newNode.hooks;
     return patch(parent, oldNode, componentVNode);
   }
-  
+
   // Handle element replacement
   if (!oldNode || shouldReplace(oldNode, newNode)) {
     return replaceNode(parent, oldNode, newNode);
   }
-  
+
   // Update existing element
   updateElement(oldNode, newNode);
   return oldNode;
@@ -44,7 +44,9 @@ export function patch(parent, oldNode, newNode) {
  */
 function patchFragment(parent, oldNode, children) {
   const fragment = document.createDocumentFragment();
-  children.forEach(child => fragment.appendChild(patch(parent, null, child)));
+  children
+    .filter(child => child !== false && child !== null && child !== undefined)
+    .forEach(child => fragment.appendChild(patch(parent, null, child)));
   return fragment;
 }
 
@@ -111,9 +113,9 @@ function replaceNode(parent, oldNode, newNode) {
  */
 function createElement(vnode) {
   if (vnode == null) return document.createTextNode('');
-  if (Array.isArray(vnode)) return patchFragment(null, null, vnode);
+  if (Array.isArray(vnode)) return patchFragment(null, null, vnode.filter(child => child !== false && child !== null && child !== undefined));
   if (typeof vnode !== 'object') return document.createTextNode(String(vnode));
-  
+
   // Special handling for body element
   if (vnode.tag === 'body') {
     const existingBody = document.body;
@@ -123,7 +125,7 @@ function createElement(vnode) {
       return existingBody;
     }
   }
-  
+
   const el = document.createElement(vnode.tag);
   if (vnode.hooks.onMount) vnode.hooks.onMount(el);
   updateElement(el, vnode);
@@ -146,7 +148,7 @@ function createElement(vnode) {
  */
 function updateElement(el, vnode) {
   if (!vnode.attrs) return;
-  
+
   for (const [key, value] of Object.entries(vnode.attrs)) {
     if (key === 'ref') value(el);
     else if (key === 'focus' && value === true) {
@@ -175,16 +177,16 @@ function reconcileChildren(el, children) {
   const keyedOld = getKeyedNodes(oldChildren);
   const newOrder = [];
 
-  children.forEach((child, i) => {
-    if (child == null) return;
+  children
+    .filter(child => child !== false && child !== null && child !== undefined)
+    .forEach((child, i) => {
+      const key = typeof child === 'object' ? child.attrs?.key : null;
+      const node = key != null && keyedOld.has(key)
+        ? keyedOld.get(key)
+        : oldChildren[i];
 
-    const key = typeof child === 'object' ? child.attrs?.key : null;
-    const node = key != null && keyedOld.has(key)
-      ? keyedOld.get(key)
-      : oldChildren[i];
-
-    newOrder.push(patch(el, node, child));
-  });
+      newOrder.push(patch(el, node, child));
+    });
 
   newOrder.forEach((node, i) => {
     if (el.childNodes[i] !== node) {
@@ -216,4 +218,4 @@ function getKeyedNodes(nodes) {
     }
   });
   return keyed;
-} 
+}

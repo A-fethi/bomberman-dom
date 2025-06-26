@@ -1,0 +1,11 @@
+
+
+
+.Player {
+    position: absolute;
+    background: url(../assets/0_Skeleton_Warrior_Idle_000.png);
+    background-size: 160%;
+    background-position: center;
+    /* border-radius: 50%; */
+    z-index: 2;
+}
