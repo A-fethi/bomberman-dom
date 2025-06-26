@@ -1,5 +1,5 @@
 import { Vnode, createState, render, batch } from "../node_modules/all4one-js/index.js";
-// import { Map } from "./map.js";
+import { Map } from "./map.js";
 import { Player } from "./player.js";
 // import { Bomb } from "./Bomb.js";
 
@@ -77,9 +77,9 @@ function generateMap() {
       } else if (Math.random() < 0.3) {
         cellType = 'B';
       }
-      if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
-        cellType = 'S';
-      }
+      // if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
+      //   cellType = 'S';
+      // }
       map[y][x] = cellType;
     }
   }
@@ -121,7 +121,14 @@ function App() {
       Vnode("button", { id: "pause-btn", title: "Pause", onClick: pause }, "⏸️"),
     ]),
     isRunning && Vnode("div", { id: "game_container" }, [
-      Vnode("p", {}, "Just a test to see if the game works"), 
+      Map.render({
+        map,
+        player,
+      }),
+      Player({
+        player,
+        map
+      })
     ]),
   ]);
 }

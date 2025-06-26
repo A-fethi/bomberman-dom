@@ -1,16 +1,8 @@
-
-
 #game_container {
-    display: grid;
-    grid-template-columns: repeat(20, 1fr); /* Use fractional units for columns */
-    grid-auto-rows: 1fr; /* Use fractional units for rows */
-    aspect-ratio: 1 / 1; /* Maintain a square aspect ratio */
-    gap: 0;
     position: relative;
     background-color: #40042c;
-    width: 90vmin; /* Use vmin to scale based on the smaller viewport dimension */
-    height: 90vmin; /* Use vmin to scale based on the smaller viewport dimension */
-
+    width: 90vmin;
+    height: 90vmin;
     border: 2px solid white;
     background-color: #222;
 }
@@ -18,7 +10,6 @@
 /* .cell {
     border: 1px solid green;
 } */
-
 
 .Wall {
     background: url(../assets/Wall.png);

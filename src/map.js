@@ -1,65 +1,40 @@
-import { Player } from "./player.js";
+import { Vnode } from "../node_modules/all4one-js/index.js";
 
 export class Map {
-    constructor(mapContainer, game) {
-        this.container = document.getElementById(mapContainer);
-        this.mapWidth = 20;
-        this.mapHeight = 20;
-        this.map = [];
-        this.game = game;
-    }
+    static render({ map, player, bombs }) {
+        const mapWidth = map[0]?.length || 0;
+        const mapHeight = map.length;
+        // const cellSize = 100 / mapWidth;
 
-    generateMap() {
-        for (let y = 0; y < this.mapHeight; y++) {
-            this.map[y] = [];
-            for (let x = 0; x < this.mapWidth; x++) {
-                let cellType = 'E'; // E => Empty
-                if (x === 0 || y === 0 || x === this.mapWidth - 1 || y === this.mapHeight - 1) {
-                    cellType = 'W'; // W => Wall
-                }
-                else if (x % 2 === 0 && y % 2 === 0) {
-                    cellType = 'W';
-                }
-                else if (Math.random() < 0.3) {
-                    cellType = 'B'; // B => Block or Box 
-                }
+        return Vnode(
+            "div",
+            {
+                id: "map",
+                style: `position: relative; width: 100%; height: 100%; display: grid; grid-template-columns: repeat(${mapWidth}, 1fr); grid-template-rows: repeat(${mapHeight}, 1fr);`
+            },
+            map.flatMap((row, y) =>
+                row.map((cell, x) => {
+                    const isPlayer = player && player.x === x && player.y === y;
+                    const bomb = bombs && bombs.find(b => b.x === x && b.y === y);
+                    let cellClass = "cell ";
+                    if (cell === "W") cellClass += "Wall";
+                    else if (cell === "B") cellClass += "Block";
+                    // else if (cell === "S") cellClass += "Spawn";
+                    else cellClass += "Empty";
 
-                if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
-                    cellType = 'S'; // S => Spawn area
-                }
-
-                this.map[y][x] = cellType;
-            }
-        }
-
-        this.createMap();
-        this.createPlayer();
-    }
-
-    createMap() {
-        const containerWidth = this.container.offsetWidth;
-        const containerHeight = this.container.offsetHeight;
-        const cellSize = Math.min(containerWidth / this.mapWidth, containerHeight / this.mapHeight);
-        this.container.innerHTML = '';
-        for (let y = 0; y < this.mapHeight; y++) {
-            for (let x = 0; x < this.mapWidth; x++) {
-                const cell = document.createElement('div');
-                cell.className = `cell`;
-                if (this.map[y][x] === "W") {
-                    cell.classList.add('Wall');
-                } else if (this.map[y][x] === "B") {
-                    cell.classList.add('Block');
-                } else {
-                    cell.classList.add("Empty");
-                }
-                // cell.style.width = `${100 / this.mapWidth}%`;
-                // cell.style.height = `${100 / this.mapHeight}%`;
-                this.container.append(cell);
-            }
-        }
-    }
-
-    createPlayer() {
-        this.game.player = new Player(1, 1, this.game);
+                    return Vnode(
+                        "div",
+                        {
+                            class: cellClass,
+                            style: `grid-column: ${x + 1}; grid-row: ${y + 1}; position: relative;`
+                        },
+                        [
+                            bomb && Vnode("div", { class: "Bomb" }),
+                            isPlayer && Vnode("div", { class: "Player" })
+                        ]
+                    );
+                })
+            )
+        );
     }
 }
