@@ -1,11 +1,10 @@
-import { waitingpage } from './waiting.js';
+import { EnterNamePage } from "./entername.js";
 import { startRouter } from "../framework/index.js";
 
 
 const routes = {
-    '/': waitingpage(),
-
-}
+  "/": EnterNamePage(),
+};
 const app = document.body;
 if (!app) {
   console.error("Could not find body element to mount the app.");

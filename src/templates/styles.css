@@ -3,8 +3,8 @@
   margin: 32px auto;
   width: 48px;
   height: 48px;
-  border: 6px solid #eee;
-  border-top: 6px solid #3498db;
+  border: 6px solid #e0e7ff;
+  border-top: 6px solid #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -14,13 +14,45 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Waiting Page Modern Styles */
 .bomberman-dom {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f9f9f9;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.bomberman-dom > h2 {
+  font-size: 2.2rem;
+  color: #22223b;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  letter-spacing: 1px;
+}
+.players-count {
+  font-size: 1.3rem;
+  color: #6366f1;
+  background: #fff;
+  padding: 1rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.07);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.timer {
+  font-size: 1.2rem;
+  color: #fff;
+  background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+  padding: 0.8rem 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.10);
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
 }
 
 .container {
@@ -98,4 +130,62 @@ h1 {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-here
+/* Enter Name Page Styles */
+.enter-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f7fafc 100%);
+}
+.enter-name h2 {
+  font-size: 2.2rem;
+  margin-bottom: 2rem;
+  color: #22223b;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.enter-name form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  background: #fff;
+  padding: 2.5rem 3rem;
+  border-radius: 18px;
+  box-shadow: 0 6px 32px rgba(60, 72, 100, 0.12);
+  min-width: 320px;
+  max-width: 90vw;
+}
+.enter-name input[type="text"] {
+  padding: 1rem 1.2rem;
+  font-size: 1.15rem;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 8px;
+  outline: none;
+  background: #f3f6fd;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(60, 72, 100, 0.04);
+}
+.enter-name input[type="text"]:focus {
+  border: 2px solid #6366f1;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+.enter-name button[type="submit"] {
+  padding: 1rem 0;
+  font-size: 1.15rem;
+  background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+  transition: background 0.2s, transform 0.1s;
+}
+.enter-name button[type="submit"]:hover {
+  background: linear-gradient(90deg, #4f46e5 0%, #2563eb 100%);
+  transform: translateY(-2px) scale(1.03);
+}

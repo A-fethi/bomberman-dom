@@ -26,15 +26,18 @@ export function startRouter(routes, container, fallback = () =>
   let currentDOM = null;
   
   window.addEventListener('hashchange', () => setHash(window.location.hash));
+  console.log("Router initialized with routes:", Object.keys(routes));
   
   effect(() => {
  
     
     const path = getHash().slice(1) || '/';
 
+    console.log("Current path:", path);
     
     const view = routes[path] || fallback;
     
+    console.log("Rendering view for path:", path, "->", view);
     
     currentDOM = patch(container, currentDOM, view);
   });

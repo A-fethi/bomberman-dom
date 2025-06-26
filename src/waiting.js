@@ -7,8 +7,16 @@ import {
 } from "../framework/index.js";
 
 // WebSocket management function
+const TIMER_DURATION = 30; // seconds
 const [getPlayers, setPlayers] = createState(0);
-function setupWebSocket(getPlayers, setPlayers) {
+const [getRoomCount, setRoomCount] = createState(1);
+const [getRoomMax, setRoomMax] = createState(4);
+const [getRoomTimer, setRoomTimer] = createState(TIMER_DURATION);
+const [getTimerActive, setTimerActive] = createState(false);
+const [getEnterGameTimer, setEnterGameTimer] = createState(0);
+const [getEnterGameActive, setEnterGameActive] = createState(false);
+
+function setupWebSocket(getPlayers, setPlayers, playerName) {
   effect(() => {
     let ws;
     try {
@@ -16,6 +24,9 @@ function setupWebSocket(getPlayers, setPlayers) {
       console.log("WebSocket connecting...");
       ws.onopen = () => {
         console.log("WebSocket connected!");
+        if (playerName) {
+          ws.send(JSON.stringify({ type: "setName", name: playerName }));
+        }
       };
 
       ws.onmessage = (event) => {
@@ -25,11 +36,25 @@ function setupWebSocket(getPlayers, setPlayers) {
         if (data.type === "playerCount") {
           console.log("Current state before update:", getPlayers());
           batch(() => {
-              setPlayers(data.count);
-              
+            setPlayers(data.count);
           });
           console.log("data", data.count);
           console.log("State after update:", getPlayers());
+        } else if (data.type === "roomUpdate") {
+          batch(() => {
+            setRoomCount(data.count);
+            setRoomMax(data.max);
+          });
+        } else if (data.type === "roomTimer") {
+          batch(() => {
+            setRoomTimer(data.value);
+            setTimerActive(data.value > 0);
+          });
+        } else if (data.type === "enterGameTimer") {
+          batch(() => {
+            setEnterGameTimer(data.value);
+            setEnterGameActive(data.value > 0);
+          });
         }
       };
 
@@ -47,14 +72,24 @@ function setupWebSocket(getPlayers, setPlayers) {
 
 // UI Component function
 function WaitingPage() {
-  const currentPlayers = getPlayers();
+  const roomCount = getRoomCount();
+  const roomMax = getRoomMax();
+  const timer = getRoomTimer();
+  const timerActive = getTimerActive();
+  const enterGameTimer = getEnterGameTimer();
+  const enterGameActive = getEnterGameActive();
   return Vnode("div", { class: "bomberman-dom" }, [
-    Vnode("h2", {}, ["Waiting for other players..."]),
-    Vnode("div", { class: "players-count" }, [currentPlayers + "/4 players"]),
+    Vnode("h2", {}, [
+      enterGameActive ? "Waiting to enter game..." : "Waiting for other players..."
+    ]),
+    Vnode("div", { class: "players-count" }, [roomCount + "/" + roomMax + " players"]),
+    !enterGameActive && timerActive ? Vnode("div", { class: "timer" }, [`Game starts in: ${timer} seconds`]) : null,
+    enterGameActive ? Vnode("div", { class: "timer" }, [`Entering game in: ${enterGameTimer} seconds`]) : null,
     Vnode("div", { class: "spinner" }, []),
-  ]);
+  ].filter(Boolean));
 }
-export function waitingpage() {
-  setupWebSocket(getPlayers, setPlayers);
+
+export function waitingpage(playerName) {
+  setupWebSocket(getPlayers, setPlayers, playerName);
   render(WaitingPage, document.body);
 }
