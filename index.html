@@ -3,31 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bomberman Game</title>
+    <title>Bomberman Multiplayer</title>
     <link rel="stylesheet" href="./src/styles/style.css">
 </head>
 <body>
-    <div id="start-menu">
-        <h1>Bomberman Game</h1>
-        <button id="start-btn">Start Game</button>
-    </div>
-
-    <div id="pause-menu" style="display: none;">
-        <h1>Paused</h1>
-        <button id="resume-btn">Continue</button>
-        <button id="restart-btn">Restart</button>
-    </div>
-
-    <div id="scoreboard">
-        <div id="timer" title="Timer">⏲️: 00:00</div>
-        <div id="score" title="Score">⭐: 0</div>
-        <div id="lives" title="Health">❤️: 3</div>
-        <div id="level" title="level">⚔️: 1</div>
-        <div id="pause-btn" title="Pause">⏸️</div>
-    </div>
-
-    <div id="game_container"></div>
-
-    <script src="./src/game.js" type="module"></script>
+    <div id="app"></div>
+    <script type="module">
+        import { Vnode, render } from './node_modules/all4one-js/index.js';
+        import { createState, effect } from './node_modules/all4one-js/index.js';
+        import { GameApp } from './src/GameApp.js';
+        
+        render(() => GameApp(), document.getElementById('app'));
+    </script>
 </body>
 </html>
