@@ -76,7 +76,7 @@ class GameLoop {
         // Render (can be variable timestep)
         this.render();
 
-        // Schedule next frame - let browser handle timing
+         // Schedule next frame - let browser handle timing
         this.animationId = requestAnimationFrame((time) => this.loop(time));
     }
 
