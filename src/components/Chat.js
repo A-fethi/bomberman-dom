@@ -6,6 +6,7 @@ import { webSocketManager } from '../WebSocketManager.js';
 export function Chat() {
     const gameState = getGameState();
     let messageValue = '';
+    let inputRef = null;
     
     const sendMessage = (e) => {
         e.preventDefault();
@@ -30,7 +31,11 @@ export function Chat() {
             chatMessages: [...gameState.chatMessages, newMessage]
         });
         
+        // Clear the input field
         messageValue = '';
+        if (inputRef) {
+            inputRef.value = '';
+        }
     };
     
     return Vnode('div', { class: 'chat-container' }, [
@@ -50,6 +55,13 @@ export function Chat() {
         ]),
         Vnode('form', { class: 'chat-input-form', onsubmit: sendMessage }, [
             Vnode('input', {
+                key: 'chat-input',
+                ref: (el) => {
+                    inputRef = el;
+                    if (el && el.value !== messageValue) {
+                        el.value = messageValue;
+                    }
+                },
                 type: 'text',
                 placeholder: 'Type a message...',
                 oninput: (e) => {

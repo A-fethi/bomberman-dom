@@ -6,6 +6,10 @@ import { createState, effect } from '../node_modules/all4one-js/index.js';
 console.log('✅ GameApp: createState, effect imports successful');
 import { webSocketManager } from './WebSocketManager.js';
 console.log('✅ GameApp: webSocketManager import successful');
+import { gameLoop } from './GameLoop.js';
+console.log('✅ GameApp: gameLoop import successful');
+import { performanceMonitor } from './PerformanceMonitor.js';
+console.log('✅ GameApp: performanceMonitor import successful');
 import { NicknameEntry } from './components/NicknameEntry.js';
 console.log('✅ GameApp: NicknameEntry import successful');
 import { WaitingRoom } from './components/WaitingRoom.js';
@@ -32,7 +36,15 @@ const initialState = {
     maxPlayers: 4,
     minPlayers: 2,
     chatMessages: [],
-    connectionStatus: 'disconnected'
+    connectionStatus: 'disconnected',
+    // Performance monitoring
+    showPerformanceStats: false,
+    performanceStats: {
+        fps: 0,
+        frameDrops: 0,
+        warnings: [],
+        isOptimal: true
+    }
 };
 
 export const [getGameState, setGameState] = createState(initialState);
@@ -54,6 +66,36 @@ webSocketManager.onConnectionStatusChange((status) => {
     updateGameState({ connectionStatus: status });
 });
 
+// Phase 3: Initialize game loop and performance monitoring
+console.log('🎮 GameApp: Setting up game loop and performance monitoring...');
+
+// Start game loop when app initializes
+gameLoop.start();
+
+// Add performance monitoring callback
+gameLoop.addUpdateCallback(() => {
+    const stats = gameLoop.getStats();
+    updateGameState({
+        performanceStats: {
+            fps: stats.fps,
+            frameDrops: stats.frameDrops,
+            warnings: stats.warnings,
+            isOptimal: stats.isOptimal
+        }
+    });
+});
+
+// Performance stats toggle (Ctrl+P)
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        const currentState = getGameState();
+        updateGameState({
+            showPerformanceStats: !currentState.showPerformanceStats
+        });
+    }
+});
+
 // Phase 2: Main application component
 export function GameApp() {
     console.log('🎮 GameApp: Function called, getting state...');
@@ -69,6 +111,41 @@ export function GameApp() {
                     gameState.connectionStatus === 'connected' ? '🟢 Connected' : 
                     gameState.connectionStatus === 'connecting' ? '🟡 Connecting...' : '🔴 Disconnected'
                 )
+            ])
+        ]),
+        
+        // Performance stats overlay (toggle with Ctrl+P)
+        gameState.showPerformanceStats && Vnode('div', { class: 'performance-overlay' }, [
+            Vnode('div', { class: 'performance-stats' }, [
+                Vnode('h3', {}, 'Performance Stats'),
+                Vnode('div', { class: 'stat-row' }, [
+                    Vnode('span', {}, 'FPS:'),
+                    Vnode('span', { 
+                        class: gameState.performanceStats.fps >= 50 ? 'stat-good' : 'stat-warning' 
+                    }, `${gameState.performanceStats.fps} (target: 60)`)
+                ]),
+                Vnode('div', { class: 'stat-row' }, [
+                    Vnode('span', {}, 'Frame Drops:'),
+                    Vnode('span', { 
+                        class: gameState.performanceStats.frameDrops === 0 ? 'stat-good' : 'stat-warning' 
+                    }, gameState.performanceStats.frameDrops)
+                ]),
+                Vnode('div', { class: 'stat-row' }, [
+                    Vnode('span', {}, 'Status:'),
+                    Vnode('span', { 
+                        class: gameState.performanceStats.isOptimal ? 'stat-good' : 'stat-error' 
+                    }, gameState.performanceStats.isOptimal ? 'Optimal' : 'Issues Detected')
+                ]),
+                gameState.performanceStats.warnings.length > 0 && 
+                Vnode('div', { class: 'performance-warnings' }, [
+                    Vnode('h4', {}, 'Warnings:'),
+                    ...gameState.performanceStats.warnings.map(warning => 
+                        Vnode('div', { class: 'warning-item' }, warning)
+                    )
+                ]),
+                Vnode('div', { class: 'performance-help' }, [
+                    Vnode('small', {}, 'Press Ctrl+P to toggle • Target: 60 FPS • No frame drops')
+                ])
             ])
         ]),
         

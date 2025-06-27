@@ -143,6 +143,7 @@ class WebSocketManager {
                         console.log('📨 Client: Game started');
                         import('./GameApp.js').then(({ updateGameState }) => {
                             updateGameState({ 
+                                currentScreen: 'game',
                                 gameStatus: 'playing',
                                 gameMap: message.gameMap
                             });

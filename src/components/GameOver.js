@@ -18,18 +18,6 @@ export function GameOver() {
                     onclick: () => {
                         updateGameState({
                             ...getGameState(),
-                            currentScreen: 'waiting',
-                            gameStatus: 'waiting',
-                            winner: null,
-                            countdown: null
-                        });
-                    },
-                    class: 'play-again-btn'
-                }, 'Play Again'),
-                Vnode('button', {
-                    onclick: () => {
-                        updateGameState({
-                            ...getGameState(),
                             currentScreen: 'nickname',
                             players: [],
                             gameMap: [],

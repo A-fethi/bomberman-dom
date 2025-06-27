@@ -533,10 +533,11 @@ wss.on('connection', (ws, req) => {
             timestamp: new Date().toLocaleTimeString()
         };
 
+        // Broadcast to other players (exclude sender)
         currentRoom.broadcast({
             type: 'chat_message',
             message: chatMessage
-        });
+        }, playerId);
 
         console.log(`💬 Chat from ${player.nickname}: ${text}`);
     }

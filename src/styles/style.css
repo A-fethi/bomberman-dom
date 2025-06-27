@@ -320,3 +320,103 @@ body {
         text-align: center;
     }
 }
+
+/* Performance monitoring styles */
+.performance-overlay {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    min-width: 250px;
+    backdrop-filter: blur(5px);
+}
+
+.performance-stats h3 {
+    margin: 0 0 10px 0;
+    color: #ff6b6b;
+    font-size: 14px;
+    text-align: center;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+    padding: 2px 0;
+}
+
+.stat-good {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+.stat-warning {
+    color: #ff9800;
+    font-weight: bold;
+}
+
+.stat-error {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.performance-warnings {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #444;
+}
+
+.performance-warnings h4 {
+    margin: 0 0 5px 0;
+    color: #ff9800;
+    font-size: 12px;
+}
+
+.warning-item {
+    color: #ff9800;
+    font-size: 11px;
+    margin: 2px 0;
+    padding-left: 10px;
+}
+
+.performance-help {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #444;
+    text-align: center;
+    color: #888;
+    font-size: 10px;
+}
+
+/* Performance optimization for animations */
+.game-app * {
+    will-change: auto;
+}
+
+.game-app .countdown-number,
+.game-app .waiting-time {
+    will-change: transform;
+}
+
+/* Smooth transitions */
+.game-app {
+    transition: all 0.1s ease-out;
+}
+
+/* Optimize rendering */
+.game-app {
+    contain: layout style paint;
+}
+
+/* Reduce repaints */
+.game-app * {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
