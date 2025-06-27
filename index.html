@@ -4,16 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bomberman Multiplayer</title>
-    <link rel="stylesheet" href="./src/styles/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💣</text></svg>">
+    <link rel="stylesheet" href="src/styles/style.css">
+    <link rel="stylesheet" href="src/styles/menu.css">
+    <link rel="stylesheet" href="src/styles/multiplayer.css">
+    <link rel="stylesheet" href="src/styles/player.css">
+    <link rel="stylesheet" href="src/styles/map.css">
+    <link rel="stylesheet" href="src/styles/bomb.css">
+    <link rel="stylesheet" href="src/styles/scoreboard.css">
 </head>
 <body>
     <div id="app"></div>
     <script type="module">
+        console.log('🚀 HTML: Starting application initialization...');
         import { Vnode, render } from './node_modules/all4one-js/index.js';
+        console.log('✅ HTML: all4one-js imports successful');
         import { createState, effect } from './node_modules/all4one-js/index.js';
+        console.log('✅ HTML: all4one-js state imports successful');
         import { GameApp } from './src/GameApp.js';
+        console.log('✅ HTML: GameApp import successful');
         
+        console.log('🎯 HTML: About to render GameApp...');
         render(() => GameApp(), document.getElementById('app'));
+        console.log('✅ HTML: Render call completed');
     </script>
 </body>
 </html>

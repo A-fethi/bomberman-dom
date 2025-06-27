@@ -1,7 +1,8 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
-import { getGameState, setGameState } from '../GameApp.js';
+import { getGameState, updateGameState } from '../GameApp.js';
+import { webSocketManager } from '../WebSocketManager.js';
 
-// Phase 2: Chat component (preparing for Phase 7)
+// Phase 3: Chat component with WebSocket integration
 export function Chat() {
     const gameState = getGameState();
     let messageValue = '';
@@ -12,6 +13,10 @@ export function Chat() {
         const trimmedMessage = messageValue.trim();
         if (!trimmedMessage) return;
         
+        // Phase 3: Use WebSocket to send chat message
+        webSocketManager.sendChatMessage(trimmedMessage);
+        
+        // Add local message immediately for instant feedback
         const newMessage = {
             id: Date.now(),
             player: gameState.nickname,
@@ -20,7 +25,7 @@ export function Chat() {
             isLocal: true
         };
         
-        setGameState({
+        updateGameState({
             ...getGameState(),
             chatMessages: [...gameState.chatMessages, newMessage]
         });

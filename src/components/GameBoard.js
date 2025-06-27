@@ -1,5 +1,5 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
-import { getGameState, setGameState } from '../GameApp.js';
+import { getGameState, updateGameState } from '../GameApp.js';
 
 // Phase 2: GameBoard component (placeholder for Phase 5)
 export function GameBoard() {
@@ -18,7 +18,7 @@ export function GameBoard() {
             Vnode('div', { class: 'game-controls' }, [
                 Vnode('button', {
                     onclick: () => {
-                        setGameState({
+                        updateGameState({
                             ...getGameState(),
                             currentScreen: 'gameOver',
                             winner: gameState.nickname

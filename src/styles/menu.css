@@ -211,6 +211,21 @@
 }
 
 .menu-button:hover {
-    background: #555;
+    background: #6699ff;
+}
+
+/* Force input text visibility */
+input.nickname-input {
+    color: #333 !important;
+    background: white !important;
+}
+
+input.nickname-input:focus {
+    color: #333 !important;
+    background: white !important;
+}
+
+input.nickname-input::placeholder {
+    color: #999 !important;
 }
 

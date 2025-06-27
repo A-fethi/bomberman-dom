@@ -45,24 +45,24 @@ Build a multiplayer Bomberman game with 2-4 players, WebSocket communication, ch
 - [x] Implement responsive design
 - [x] Add modern UI with glassmorphism effects
 
-## Phase 3: WebSocket Server (Day 5-6)
+## Phase 3: WebSocket Server (Day 5-6) ✅ COMPLETED
 
-### 3.1 Server Setup
-- [ ] Create server.js with WebSocket support
-- [ ] Implement static file serving
-- [ ] Set up basic WebSocket connection handling
+### 3.1 Server Setup ✅
+- [x] Create server.js with WebSocket support
+- [x] Implement static file serving
+- [x] Set up basic WebSocket connection handling
 
-### 3.2 Game Logic Server-Side
-- [ ] Implement waiting room management
-- [ ] Create player join/leave handling
-- [ ] Add countdown timer logic
-- [ ] Implement game start conditions
+### 3.2 Game Logic Server-Side ✅
+- [x] Implement waiting room management
+- [x] Create player join/leave handling
+- [x] Add countdown timer logic
+- [x] Implement game start conditions
 
-### 3.3 Map Generation
-- [ ] Create random map generator
-- [ ] Implement wall and block placement
-- [ ] Ensure safe spawn areas in corners
-- [ ] Add proper map validation
+### 3.3 Map Generation ✅
+- [x] Create random map generator
+- [x] Implement wall and block placement
+- [x] Ensure safe spawn areas in corners
+- [x] Add proper map validation
 
 ## Phase 4: Client-Server Communication (Day 7-8)
 

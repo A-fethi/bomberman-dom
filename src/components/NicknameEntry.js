@@ -1,62 +1,77 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
-import { getGameState, setGameState } from '../GameApp.js';
+import { getGameState, updateGameState } from '../GameApp.js';
+import { webSocketManager } from '../WebSocketManager.js';
 
-// Phase 2: NicknameEntry component
+// Phase 2: NicknameEntry component with all4one-js
 export function NicknameEntry() {
-    let nicknameValue = '';
-    let errorMessage = '';
-    
+    console.log('📝 NicknameEntry: Function called...');
+    const { nicknameInput, nicknameError } = getGameState();
+    console.log('📊 NicknameEntry: Got state - input:', nicknameInput, 'error:', nicknameError);
+
+    let inputRef = null;
+
     const handleSubmit = (e) => {
+        console.log('📝 NicknameEntry: Form submitted...');
         e.preventDefault();
-        
-        const trimmedNickname = nicknameValue.trim();
-        
+        const trimmedNickname = nicknameInput.trim();
+        console.log('📝 NicknameEntry: Trimmed nickname:', trimmedNickname);
+
         if (!trimmedNickname) {
-            errorMessage = 'Please enter a nickname';
-            setGameState({ ...getGameState() });
+            console.log('❌ NicknameEntry: Empty nickname error');
+            updateGameState({ nicknameError: 'Please enter a nickname' });
             return;
         }
-        
         if (trimmedNickname.length < 2) {
-            errorMessage = 'Nickname must be at least 2 characters long';
-            setGameState({ ...getGameState() });
+            console.log('❌ NicknameEntry: Nickname too short error');
+            updateGameState({ nicknameError: 'Nickname must be at least 2 characters long' });
             return;
         }
-        
         if (trimmedNickname.length > 15) {
-            errorMessage = 'Nickname must be less than 15 characters';
-            setGameState({ ...getGameState() });
+            console.log('❌ NicknameEntry: Nickname too long error');
+            updateGameState({ nicknameError: 'Nickname must be less than 15 characters' });
             return;
         }
-        
-        // Phase 2: Set nickname and transition to waiting room
-        setGameState({
-            ...getGameState(),
-            currentScreen: 'waiting',
+
+        console.log('✅ NicknameEntry: Valid nickname, updating state...');
+        updateGameState({
             nickname: trimmedNickname,
-            roomId: null, // Will be assigned when joining a room
-            players: [{ id: 'local', nickname: trimmedNickname, isLocal: true }]
+            currentScreen: 'waiting',
+            nicknameInput: '',
+            nicknameError: ''
         });
+        console.log('🔌 NicknameEntry: Calling webSocketManager.sendJoinGame...');
+        webSocketManager.sendJoinGame(trimmedNickname);
     };
-    
-    return Vnode('div', { class: 'nickname-entry' }, [
+
+    console.log('🎨 NicknameEntry: Building Vnode...');
+    const result = Vnode('div', { class: 'nickname-entry' }, [
         Vnode('div', { class: 'nickname-form' }, [
             Vnode('h2', {}, 'Enter Your Nickname'),
             Vnode('form', { onsubmit: handleSubmit }, [
                 Vnode('input', {
+                    key: 'nickname-input',
+                    ref: (el) => {
+                        inputRef = el;
+                        if (el && el.value !== nicknameInput) {
+                            console.log('🔧 NicknameEntry: Setting input value to:', nicknameInput);
+                            el.value = nicknameInput;
+                        }
+                    },
                     type: 'text',
                     placeholder: 'Enter nickname (2-15 characters)',
                     oninput: (e) => {
-                        nicknameValue = e.target.value;
-                        errorMessage = '';
+                        console.log('📝 NicknameEntry: Input changed to:', e.target.value);
+                        updateGameState({ nicknameInput: e.target.value, nicknameError: '' });
                     },
                     maxlength: 15,
                     autocomplete: 'off',
                     class: 'nickname-input'
                 }),
-                errorMessage && Vnode('div', { class: 'error-message' }, errorMessage),
+                nicknameError && Vnode('div', { class: 'error-message' }, nicknameError),
                 Vnode('button', { type: 'submit', class: 'submit-btn' }, 'Join Game')
             ])
         ])
     ]);
+    console.log('✅ NicknameEntry: Vnode built successfully');
+    return result;
 } 

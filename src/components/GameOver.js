@@ -1,5 +1,5 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
-import { getGameState, setGameState } from '../GameApp.js';
+import { getGameState, updateGameState } from '../GameApp.js';
 
 // Phase 2: GameOver component
 export function GameOver() {
@@ -16,7 +16,7 @@ export function GameOver() {
             Vnode('div', { class: 'game-over-actions' }, [
                 Vnode('button', {
                     onclick: () => {
-                        setGameState({
+                        updateGameState({
                             ...getGameState(),
                             currentScreen: 'waiting',
                             gameStatus: 'waiting',
@@ -28,7 +28,7 @@ export function GameOver() {
                 }, 'Play Again'),
                 Vnode('button', {
                     onclick: () => {
-                        setGameState({
+                        updateGameState({
                             ...getGameState(),
                             currentScreen: 'nickname',
                             players: [],

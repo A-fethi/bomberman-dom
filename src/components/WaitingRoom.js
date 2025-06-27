@@ -1,20 +1,33 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
-import { getGameState, setGameState } from '../GameApp.js';
+import { getGameState, updateGameState } from '../GameApp.js';
+import { webSocketManager } from '../WebSocketManager.js';
 
-// Phase 2: WaitingRoom component with room management
+// Phase 3: WaitingRoom component with WebSocket integration
 export function WaitingRoom() {
     const gameState = getGameState();
     
-    const startGame = () => {
-        if (gameState.players.length >= gameState.minPlayers) {
-            setGameState({
-                ...getGameState(),
-                currentScreen: 'game',
-                gameStatus: 'starting',
-                countdown: 3
-            });
-        }
+    const leaveRoom = () => {
+        // Phase 3: Use WebSocket to leave game
+        webSocketManager.leaveGame();
+        
+        updateGameState({
+            ...getGameState(),
+            currentScreen: 'nickname',
+            players: [],
+            roomId: null,
+            chatMessages: []
+        });
     };
+    
+    // Calculate waiting time display
+    const getWaitingTimeDisplay = () => {
+        if (gameState.waitingTimeLeft !== null && gameState.waitingTimeLeft > 0) {
+            return `Waiting for more players: ${gameState.waitingTimeLeft}s`;
+        }
+        return null;
+    };
+    
+    const waitingTimeDisplay = getWaitingTimeDisplay();
     
     return Vnode('div', { class: 'waiting-room' }, [
         Vnode('div', { class: 'waiting-content' }, [
@@ -22,11 +35,21 @@ export function WaitingRoom() {
             Vnode('div', { class: 'room-info' }, [
                 Vnode('div', { class: 'room-id' }, [
                     Vnode('span', {}, 'Room: '),
-                    Vnode('span', { class: 'room-number' }, gameState.roomId || 'Creating...')
+                    Vnode('span', { class: 'room-number' }, gameState.roomId || 'Connecting...')
                 ]),
                 Vnode('div', { class: 'player-counter' }, [
                     Vnode('span', {}, `${gameState.players.length}/${gameState.maxPlayers} players`)
                 ])
+            ]),
+            waitingTimeDisplay && 
+            Vnode('div', { class: 'waiting-timer' }, [
+                Vnode('h3', {}, 'Waiting Timer:'),
+                Vnode('div', { class: 'waiting-time' }, waitingTimeDisplay)
+            ]),
+            gameState.countdown && gameState.countdown > 0 && 
+            Vnode('div', { class: 'countdown' }, [
+                Vnode('h3', {}, 'Game Starting In:'),
+                Vnode('div', { class: 'countdown-number' }, gameState.countdown)
             ]),
             Vnode('div', { class: 'players-list' }, [
                 Vnode('h3', {}, 'Connected Players:'),
@@ -39,24 +62,14 @@ export function WaitingRoom() {
             ]),
             Vnode('div', { class: 'waiting-info' }, [
                 Vnode('p', {}, `Waiting for ${gameState.minPlayers}-${gameState.maxPlayers} players to join...`),
-                Vnode('p', {}, 'Game will start automatically when ready!')
+                gameState.players.length >= gameState.minPlayers ? 
+                    Vnode('p', {}, 'Game will start automatically!') :
+                    Vnode('p', {}, 'Need more players to start...')
             ]),
-            gameState.players.length >= gameState.minPlayers && 
             Vnode('button', {
-                onclick: startGame,
-                class: 'start-game-btn'
-            }, 'Start Game'),
-            Vnode('button', {
-                onclick: () => {
-                    setGameState({
-                        ...getGameState(),
-                        currentScreen: 'nickname',
-                        players: [],
-                        roomId: null
-                    });
-                },
+                onclick: leaveRoom,
                 class: 'back-btn'
-            }, 'Back to Nickname')
+            }, 'Leave Room')
         ])
     ]);
 } 
