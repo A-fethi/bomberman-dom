@@ -90,6 +90,12 @@
     flex-direction: column;
     border: 2px solid #444;
     background: #1a1a1a;
+    position: relative; /* Ensure map is positioned relative for player markers */
+}
+
+.game-map-wrapper {
+    position: relative;
+    display: inline-block;
 }
 
 .map-row {

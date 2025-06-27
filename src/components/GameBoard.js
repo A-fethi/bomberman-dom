@@ -45,12 +45,23 @@ export function GameBoard() {
     const renderPlayers = () => {
         if (!gameState.gameMap || !gameState.players) return null;
         
+        console.log('🎮 GameBoard: Rendering players:', gameState.players);
+        
         return gameState.players.map(player => {
-            if (!player.position) return null;
+            if (!player.position) {
+                console.log('❌ GameBoard: Player has no position:', player);
+                return null;
+            }
+            
+            // Calculate position relative to the map (not the container)
+            const x = player.position.x * 30; // 30px per cell
+            const y = player.position.y * 30; // 30px per cell
+            
+            console.log('🎮 GameBoard: Player position:', player.nickname, 'at', player.position, 'pixels:', {x, y});
             
             return Vnode('div', {
                 class: 'player-marker',
-                style: `left: ${player.position.x * 30}px; top: ${player.position.y * 30}px;`
+                style: `left: ${x}px; top: ${y}px;`
             }, [
                 Vnode('div', { class: 'player-avatar' }, '👤'),
                 Vnode('div', { class: 'player-name' }, player.nickname)
@@ -69,8 +80,10 @@ export function GameBoard() {
         ]),
         Vnode('div', { class: 'game-area' }, [
             Vnode('div', { class: 'map-container' }, [
-                renderMap(),
-                renderPlayers()
+                Vnode('div', { class: 'game-map-wrapper' }, [
+                    renderMap(),
+                    renderPlayers()
+                ])
             ]),
             Vnode('div', { class: 'game-controls' }, [
                 Vnode('button', {
