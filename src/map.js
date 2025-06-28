@@ -19,7 +19,7 @@ export class Map {
                     let cellClass = "cell ";
                     if (cell === "W") cellClass += "Wall";
                     else if (cell === "B") cellClass += "Block";
-                    // else if (cell === "S") cellClass += "Spawn";
+                    else if (cell === "S") cellClass += "Spawn";
                     else cellClass += "Empty";
 
                     return Vnode(

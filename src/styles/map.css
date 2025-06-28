@@ -22,7 +22,8 @@
     background-size: contain;
 }
 
-.Empty {
+.Empty,
+.Spawn {
     background: url(../assets/empty.png);
     background-size: contain;
 }

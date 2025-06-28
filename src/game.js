@@ -77,18 +77,60 @@ function generateMap() {
       } else if (Math.random() < 0.3) {
         cellType = 'B';
       }
-      // if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
-      //   cellType = 'S';
-      // }
+      if ((x === 1 && y === 1) || (x === 1 && y === 2) || (x === 2 && y === 1)) {
+        cellType = 'S';
+      }
       map[y][x] = cellType;
     }
   }
   return map;
 }
 
+function handleKeyDown(event) {
+  if (!getGameRunning()) return;
 
-// Main App Vnode
+  const player = getPlayer()
+  const map = getMap()
+
+  let { x, y, direction } = player
+  let moved = false
+
+  switch (event.key) {
+    case "ArrowUp":
+      if (isValidMove(x, y - 1, map)) { y -= 1; moved = true }
+      break;
+    case "ArrowDown":
+      if (isValidMove(x, y + 1, map)) { y += 1; moved = true }
+      break;
+    case "ArrowLeft":
+      if (isValidMove(x - 1, y, map)) { x -= 1; moved = true; direction = 'left'; }
+      break;
+    case "ArrowRight":
+      if (isValidMove(x + 1, y, map)) { x += 1; moved = true; direction = 'right'; }
+      break;
+    case " ":
+      console.log("Bomb placed at", x, y);
+      break;
+    case "Escape":
+      pause();
+      break;
+  }
+  if (moved) {
+    setPlayer({ x, y, direction })
+  }
+}
+
+function isValidMove(x, y, map) {
+  return x >= 0 && x < 20 && y >= 0 && y < 20 && map[y][x] !== 'W' && map[y][x] !== 'B'
+}
+
+let keyboardEventListenerAdded = false;
+
 function App() {
+  if (!keyboardEventListenerAdded) {
+    document.addEventListener("keydown", handleKeyDown);
+    keyboardEventListenerAdded = true;
+  }
   const timer = getTimer();
   const score = getScore();
   const lives = getLives();
