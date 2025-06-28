@@ -1,4 +1,3 @@
-
 #start-menu {
     text-align: center;
     position: absolute;
@@ -10,21 +9,65 @@
     align-items: center;
     justify-content: center;
     z-index: 1;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    max-width: 500px;
+    width: 90%;
+}
+
+#start-menu h1 {
+    margin-bottom: 20px;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#start-menu p {
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #fff;
+}
+
+#start-menu div {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#start-menu div p {
+    margin: 8px 0;
+    font-size: 14px;
+    text-align: left;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#start-menu div p:last-child {
+    border-bottom: none;
 }
 
 #start-btn {
     padding: 15px 30px;
-    background: #44b;
+    background: linear-gradient(45deg, #44b, #6699ff);
     color: white;
     border: 2px solid white;
     cursor: pointer;
     font-size: 20px;
     border-radius: 10px;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    margin-top: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 #start-btn:hover {
-    background: #6699ff;
+    background: linear-gradient(45deg, #6699ff, #44b);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 153, 255, 0.4);
 }
 
 #pause-menu {

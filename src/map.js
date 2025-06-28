@@ -1,7 +1,7 @@
 import { Vnode } from "../node_modules/all4one-js/index.js";
 
 export class Map {
-    static render({ map, player, bombs }) {
+    static render({ map, players, bombs }) {
         const mapWidth = map[0]?.length || 0;
         const mapHeight = map.length;
         // const cellSize = 100 / mapWidth;
@@ -14,7 +14,7 @@ export class Map {
             },
             map.flatMap((row, y) =>
                 row.map((cell, x) => {
-                    const isPlayer = player && player.x === x && player.y === y;
+                    const playerAtPosition = players && players.find(p => p.x === x && p.y === y);
                     const bomb = bombs && bombs.find(b => b.x === x && b.y === y);
                     let cellClass = "cell ";
                     if (cell === "W") cellClass += "Wall";
@@ -30,11 +30,19 @@ export class Map {
                         },
                         [
                             bomb && Vnode("div", { class: "Bomb" }),
-                            isPlayer && Vnode("div", { class: "Player" })
+                            playerAtPosition && Vnode("div", { 
+                                class: "Player",
+                                style: `background-color: ${getPlayerColor(playerAtPosition.id)}; border: 2px solid #000; border-radius: 50%;`
+                            })
                         ]
                     );
                 })
             )
         );
     }
+}
+
+function getPlayerColor(playerId) {
+    const colors = ['#ff4444', '#4444ff', '#44ff44', '#ffff44'];
+    return colors[playerId - 1] || '#ffffff';
 }
