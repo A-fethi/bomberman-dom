@@ -29,7 +29,17 @@ export class Map {
                             style: `grid-column: ${x + 1}; grid-row: ${y + 1}; position: relative;`
                         },
                         [
-                            bomb && Vnode("div", { class: "Bomb" }),
+                            bomb && Vnode("div", { 
+                                class: bomb.exploding ? "Bomb Explosion" : "Bomb",
+                                style: `position: absolute; z-index: 1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black;`
+                            }, bomb.exploding ? "" : Math.ceil(bomb.timer / 1000)),
+                            bomb && bomb.exploding && bomb.explosionElements && bomb.explosionElements.map((explosion, index) => 
+                                explosion.x === x && explosion.y === y ? 
+                                Vnode("div", { 
+                                    class: "Explosion",
+                                    style: `position: absolute; z-index: 3; width: 100%; height: 100%;`
+                                }) : null
+                            ).filter(Boolean),
                             playerAtPosition && Vnode("div", { 
                                 class: "Player",
                                 style: `background-color: ${getPlayerColor(playerAtPosition.id)}; border: 2px solid #000; border-radius: 50%;`

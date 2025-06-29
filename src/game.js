@@ -72,10 +72,130 @@ function restart() {
 
 function gameLoop(timestamp) {
   if (!getGameRunning()) return;
+  if (typeof timestamp !== "number") {
+    timestamp = performance.now()
+  }
   const deltaTime = timestamp - lastFrameTime;
   lastFrameTime = timestamp;
+  
+  // Update game timer
   setTimer(getTimer() + deltaTime / 1000);
+  
+  // Update bomb timers
+  updateBombTimers(deltaTime);
+  
   requestAnimationFrame(gameLoop);
+}
+
+let count = 0
+function updateBombTimers(deltaTime) {
+  const bombs = getBombs();
+  const updatedBombs = bombs.map(bomb => {
+    if (bomb.timer > 0) {
+      bomb.timer -= deltaTime;
+      if (bomb.timer <= 0 && !bomb.exploding) {
+        // Start explosion animation
+        bomb.exploding = true;
+        bomb.explosionTimer = 1000; // 1 second explosion animation
+        handleBombExplosion(bomb);
+      }
+    }
+    
+    if (bomb.exploding) {
+      bomb.explosionTimer -= deltaTime;
+      if (bomb.explosionTimer <= 0) {
+        return null; // Remove bomb after animation completes
+      }
+    }
+    
+    return bomb;
+  }).filter(bomb => bomb !== null);
+  
+  if (updatedBombs.length !== bombs.length) {
+    setBombs(updatedBombs);
+  }
+}
+
+function handleBombExplosion(bomb) {
+  const map = getMap();
+  const players = getPlayers();
+  const directions = [
+    { dx: 0, dy: -1 }, // Up
+    { dx: 0, dy: 1 },  // Down
+    { dx: -1, dy: 0 }, // Left
+    { dx: 1, dy: 0 }   // Right
+  ];
+
+  // Create new map with destroyed blocks
+  const newMap = map.map(row => [...row]);
+  let mapChanged = false;
+
+  // Create explosion elements for visual effect
+  const explosionElements = [];
+  
+  // Add explosion at bomb center
+  explosionElements.push({ x: bomb.x, y: bomb.y, type: 'center' });
+
+  // Check explosion in all directions
+  directions.forEach(direction => {
+    for (let i = 1; i <= 2; i++) {
+      const newX = bomb.x + direction.dx * i;
+      const newY = bomb.y + direction.dy * i;
+      
+      if (newX >= 0 && newX < 20 && newY >= 0 && newY < 20) {
+        if (newMap[newY][newX] === 'B') {
+          newMap[newY][newX] = 'E'; // Destroy block
+          mapChanged = true;
+          explosionElements.push({ x: newX, y: newY, type: 'end' });
+          break;
+        } else if (newMap[newY][newX] === 'W') {
+          break; // Wall stops explosion
+        } else {
+          explosionElements.push({ x: newX, y: newY, type: 'middle' });
+        }
+      }
+    }
+  });
+
+  // Add explosion elements to bomb object for rendering
+  bomb.explosionElements = explosionElements;
+
+  // Check for player damage
+  const updatedPlayers = players.map(player => {
+    // Check if player is in explosion range
+    const inExplosionRange = directions.some(direction => {
+      for (let i = 0; i <= 2; i++) {
+        const explosionX = bomb.x + direction.dx * i;
+        const explosionY = bomb.y + direction.dy * i;
+        if (player.x === explosionX && player.y === explosionY) {
+          return true;
+        }
+        // Stop checking this direction if we hit a wall
+        if (i > 0 && map[explosionY][explosionX] === 'W') {
+          break;
+        }
+      }
+      return false;
+    });
+
+    if (inExplosionRange) {
+      return { ...player, lives: Math.max(0, player.lives - 1) };
+    }
+    return player;
+  });
+
+  // Update state if changes occurred
+  if (mapChanged) {
+    setMap(newMap);
+  }
+  
+  const playersChanged = updatedPlayers.some((player, index) => 
+    player.lives !== players[index].lives
+  );
+  
+  if (playersChanged) {
+    setPlayers(updatedPlayers);
+  }
 }
 
 function generateMap() {
@@ -139,6 +259,24 @@ function handleKeyDown(event) {
         break;
       case controls.bomb.toLowerCase():
         console.log(`Player ${player.id} placed bomb at`, x, y);
+        // Create a new bomb with timer
+        const newBomb = {
+          x: x,
+          y: y,
+          playerId: player.id,
+          timer: 3000, // 3 seconds in milliseconds
+          exploded: false,
+          exploding: false,
+          explosionTimer: 0,
+          explode: function() {
+            if (this.exploded) return;
+            this.exploded = true;
+            console.log(`Bomb exploded at ${this.x}, ${this.y}`);
+            // Handle explosion logic here
+            // Remove blocks, damage players, etc.
+          }
+        };
+        setBombs([...getBombs(), newBomb]);
         break;
     }
     
@@ -190,15 +328,15 @@ function App() {
   return Vnode("div", {}, [
     !isRunning && !isPaused && Vnode("div", { id: "start-menu" }, [
       Vnode("h1", {}, "Bomberman Game"),
-      Vnode("p", {}, "4 Players - Each in a corner"),
-      Vnode("div", { style: "text-align: left; margin: 20px 0;" }, [
-        Vnode("p", {}, "Player 1 (Red): WASD + Space"),
-        Vnode("p", {}, "Player 2 (Blue): Arrow Keys + Enter"),
-        Vnode("p", {}, "Player 3 (Green): IJKL + O"),
-        Vnode("p", {}, "Player 4 (Yellow): TFGH + Y"),
-      ]),
+      // Vnode("p", {}, "4 Players - Each in a corner"),
+      // Vnode("div", { style: "text-align: left; margin: 20px 0;" }, [
+      //   Vnode("p", {}, "Player 1 (Red): WASD + Space"),
+      //   Vnode("p", {}, "Player 2 (Blue): Arrow Keys + Enter"),
+      //   Vnode("p", {}, "Player 3 (Green): IJKL + O"),
+      //   Vnode("p", {}, "Player 4 (Yellow): TFGH + Y"),
+      // ]),
       Vnode("button", {
-        id: "start-btn", onClick: start, class: "menu-button"
+        id: "start-btn", onClick: start
       }, "Start Game"),
     ]),
     isPaused && Vnode(
@@ -210,21 +348,22 @@ function App() {
         Vnode("button", { id: "restart-btn", onClick: restart, class: "menu-button" }, "Restart"),
       ]
     ),
-    isRunning && Vnode("div", { id: "scoreboard", style: "display: flex; flex-wrap: wrap; gap: 10px;" }, [
-      Vnode("div", { id: "timer", title: "Timer" }, `⏲️: ${Math.floor(timer)}s`),
-      ...players.map(player => 
-        Vnode("div", { 
-          id: `player-${player.id}-stats`, 
-          title: `Player ${player.id}`, 
-          style: `color: ${getPlayerColor(player.id)}; font-weight: bold;`
-        }, `P${player.id}: ❤️${player.lives} ⭐${player.score}`)
-      ),
-      Vnode("button", { id: "pause-btn", title: "Pause", onClick: pause }, "⏸️"),
-    ]),
+    // isRunning && Vnode("div", { id: "scoreboard", style: "display: flex; flex-wrap: wrap; gap: 10px;" }, [
+    //   Vnode("div", { id: "timer", title: "Timer" }, `⏲️: ${Math.floor(timer)}s`),
+    //   ...players.map(player => 
+    //     Vnode("div", { 
+    //       id: `player-${player.id}-stats`, 
+    //       title: `Player ${player.id}`, 
+    //       style: `color: ${getPlayerColor(player.id)}; font-weight: bold;`
+    //     }, `P${player.id}: ❤️${player.lives} ⭐${player.score}`)
+    //   ),
+    //   Vnode("button", { id: "pause-btn", title: "Pause", onClick: pause }, "⏸️"),
+    // ]),
     isRunning && Vnode("div", { id: "game_container" }, [
       Map.render({
         map,
         players,
+        bombs,
       }),
       ...players.map(player => Player({ player, map }))
     ]),

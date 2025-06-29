@@ -64,11 +64,11 @@
     letter-spacing: 1px;
 }
 
-#start-btn:hover {
+/* #start-btn:hover {
     background: linear-gradient(45deg, #6699ff, #44b);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 153, 255, 0.4);
-}
+} */
 
 #pause-menu {
     position: absolute;
