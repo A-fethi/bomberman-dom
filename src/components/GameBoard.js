@@ -34,39 +34,19 @@ export function GameBoard() {
                                 cellClass += ' empty';
                         }
                         
-                        return Vnode('div', { class: cellClass }, cellContent);
+                        // Check if a player is at this cell
+                        const player = gameState.players && gameState.players.find(p => p.position && p.position.x === x && p.position.y === y);
+                        return Vnode('div', { class: cellClass }, [
+                            cellContent,
+                            player && Vnode('div', { class: 'player-marker' }, [
+                                Vnode('div', { class: 'player-avatar' }, '👤'),
+                                Vnode('div', { class: 'player-name' }, player.nickname)
+                            ])
+                        ]);
                     })
                 )
             )
         );
-    };
-    
-    // Render players on the map
-    const renderPlayers = () => {
-        if (!gameState.gameMap || !gameState.players) return null;
-        
-        console.log('🎮 GameBoard: Rendering players:', gameState.players);
-        
-        return gameState.players.map(player => {
-            if (!player.position) {
-                console.log('❌ GameBoard: Player has no position:', player);
-                return null;
-            }
-            
-            // Calculate position relative to the map (not the container)
-            const x = player.position.x * 30; // 30px per cell
-            const y = player.position.y * 30; // 30px per cell
-            
-            console.log('🎮 GameBoard: Player position:', player.nickname, 'at', player.position, 'pixels:', {x, y});
-            
-            return Vnode('div', {
-                class: 'player-marker',
-                style: `left: ${x}px; top: ${y}px;`
-            }, [
-                Vnode('div', { class: 'player-avatar' }, '👤'),
-                Vnode('div', { class: 'player-name' }, player.nickname)
-            ]);
-        });
     };
     
     return Vnode('div', { class: 'game-board' }, [
@@ -81,8 +61,7 @@ export function GameBoard() {
         Vnode('div', { class: 'game-area' }, [
             Vnode('div', { class: 'map-container' }, [
                 Vnode('div', { class: 'game-map-wrapper' }, [
-                    renderMap(),
-                    renderPlayers()
+                    renderMap()
                 ])
             ]),
             Vnode('div', { class: 'game-controls' }, [
