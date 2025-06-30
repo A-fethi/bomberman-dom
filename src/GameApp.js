@@ -96,6 +96,41 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+function setupMovementControls() {
+    window.addEventListener('keyup', (e) => {
+        const gameState = getGameState();
+        if (gameState.currentScreen !== 'game') return;
+
+        let direction = null;
+        switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                direction = 'up';
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                direction = 'down';
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                direction = 'left';
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                direction = 'right';
+                break;
+            default:
+                return;
+        }
+        e.preventDefault();
+        webSocketManager.movePlayer(direction);
+    });
+}
+
 // Phase 2: Main application component
 export function GameApp() {
     console.log('🎮 GameApp: Function called, getting state...');
@@ -173,6 +208,8 @@ export function GameApp() {
     console.log('✅ GameApp: Vnode tree built successfully');
     return result;
 }
+
+setupMovementControls();
 
 // Phase 2: Event handlers
 function handleNicknameSubmit(nickname) {

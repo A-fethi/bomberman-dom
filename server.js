@@ -4,6 +4,7 @@ import { extname, join } from 'path';
 import { WebSocketServer } from 'ws';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { log } from 'console';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -292,7 +293,13 @@ class GameRoom {
                 console.log('📤 Server: Sending to player:', player.nickname, 'message type:', message.type);
                 player.ws.send(JSON.stringify(message));
             } else if (playerId === excludePlayerId) {
+                if (message.type !== 'player_moved' && message.type !== 'bomb_placed') {
                 console.log('📤 Server: Skipping excluded player:', player.nickname);
+                } else {
+                console.log('📤 Server: Player moved or bomb placed, sending to all players:', player.nickname);
+
+                player.ws.send(JSON.stringify(message));
+            }
             } else if (!player.ws) {
                 console.log('❌ Server: Player has no WebSocket:', player.nickname);
             }
@@ -474,8 +481,9 @@ wss.on('connection', (ws, req) => {
 
     function handlePlayerMove(ws, message, playerId, currentRoom) {
         if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
-        
-        const { direction } = message;
+        console.log(message);
+        console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
+                const { direction } = message;
         const player = currentRoom.players.get(playerId);
         
         if (!player) return;
