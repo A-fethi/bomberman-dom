@@ -1,6 +1,7 @@
 import { Vnode } from '../../node_modules/all4one-js/index.js';
 import { getGameState, updateGameState } from '../GameApp.js';
 import { webSocketManager } from '../WebSocketManager.js';
+import { Chat } from './Chat.js';
 
 // Phase 3: WaitingRoom component with WebSocket integration
 export function WaitingRoom() {
@@ -70,6 +71,7 @@ export function WaitingRoom() {
                 onclick: leaveRoom,
                 class: 'back-btn'
             }, 'Leave Room')
-        ])
+        ]),
+        Chat()
     ]);
 } 

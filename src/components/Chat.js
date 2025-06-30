@@ -2,10 +2,10 @@ import { Vnode } from '../../node_modules/all4one-js/index.js';
 import { getGameState, updateGameState } from '../GameApp.js';
 import { webSocketManager } from '../WebSocketManager.js';
 
+let messageValue = '';
 // Phase 3: Chat component with WebSocket integration
 export function Chat() {
     const gameState = getGameState();
-    let messageValue = '';
     let inputRef = null;
     
     const sendMessage = (e) => {

@@ -591,9 +591,11 @@
 .waiting-room {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    padding: 20px;
+    gap: 20px;
 }
 
 .waiting-content {
@@ -604,6 +606,44 @@
     text-align: center;
     max-width: 500px;
     width: 90%;
+    flex-shrink: 0;
+}
+
+/* Chat positioning in waiting room */
+.waiting-room .chat-container {
+    align-self: flex-start;
+    margin-top: 0;
+}
+
+/* Responsive design for waiting room with chat */
+@media (max-width: 1200px) {
+    .waiting-room {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .waiting-room .chat-container {
+        width: 100%;
+        max-width: 500px;
+        align-self: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .waiting-room {
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .waiting-content {
+        padding: 20px;
+        width: 95%;
+    }
+    
+    .waiting-room .chat-container {
+        width: 95%;
+        max-width: none;
+    }
 }
 
 .waiting-content h2 {
@@ -759,26 +799,6 @@
     font-size: 14px;
     margin-top: 5px;
     text-align: left;
-}
-
-/* Responsive Design for Chat */
-@media (max-width: 768px) {
-    .chat-container {
-        width: 100%;
-        max-width: none;
-    }
-    
-    .game-layout {
-        flex-direction: column;
-    }
-    
-    .chat-container {
-        order: 2;
-    }
-    
-    .game-board {
-        order: 1;
-    }
 }
 
 /* Waiting timer styles */
