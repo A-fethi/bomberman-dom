@@ -21,17 +21,19 @@ export function GameBoard() {
                         switch (cell.type) {
                             case 'wall':
                                 cellClass += ' wall';
-                                cellContent = '🧱';
+                                cellContent = Vnode('img', { class: 'cell-img', src: './src/assets/Wall.png', alt: 'Wall' });
                                 break;
                             case 'block':
                                 cellClass += ' block';
-                                cellContent = '📦';
+                                cellContent = Vnode('img', { class: 'cell-img', src: './src/assets/Icons_02.png', alt: 'Block' });
                                 break;
                             case 'empty':
                                 cellClass += ' empty';
+                                cellContent = Vnode('img', { class: 'cell-img', src: './src/assets/empty.png', alt: 'Empty' });
                                 break;
                             default:
                                 cellClass += ' empty';
+                                cellContent = Vnode('img', { class: 'cell-img', src: './src/assets/empty.png', alt: 'Empty' });
                         }
                         
                         // Check if a player is at this cell
@@ -42,7 +44,10 @@ export function GameBoard() {
                                 Vnode('div', { 
                                     class: 'player-avatar',
                                     'data-player-name': player.nickname
-                                }, '👻')
+                                }, Vnode('img', {
+                                    src: './src/assets/0_Skeleton_Warrior_Idle_000.png',
+                                    alt: player.nickname || 'Player Avatar'
+                                }))
                             ])
                         ]);
                     })

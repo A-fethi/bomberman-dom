@@ -18,20 +18,8 @@
 } */
 
 
-.Wall {
-    background: url(../assets/Wall.png);
-    background-size: contain;
-}
-
-.Block {
-    background: url(../assets/Icons_02.png);
-    background-color: #40042c;
-    background-size: contain;
-}
-
-.Empty {
-    background: url(../assets/empty.png);
-    background-size: contain;
+.Wall, .Block, .Empty {
+    background: none !important;
 }
 
 /* Game Board Layout */
@@ -90,75 +78,75 @@
     flex-direction: column;
     border: 2px solid #444;
     background: #1a1a1a;
-    position: relative; /* Ensure map is positioned relative for player markers */
+    position: relative;
+    width: fit-content;
+    height: fit-content;
+    overflow: hidden;
 }
 
 .game-map-wrapper {
     position: relative;
     display: inline-block;
+    overflow: hidden;
 }
 
 .map-row {
     display: flex;
+    flex: none;
 }
 
 .map-cell {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    max-height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
     border: 1px solid #333;
     position: relative;
+    overflow: hidden;
+    background: #222;
 }
 
-.map-cell.wall {
-    background: #666;
-    color: #333;
+.cell-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
 }
 
-.map-cell.block {
-    background: #8b4513;
-    color: #d2691e;
-}
-
-.map-cell.empty {
-    background: #2a2a2a;
-    color: transparent;
-}
-
-/* Player Markers */
 .player-marker {
-    position: relative;
-    width: 30px;
-    height: 30px;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .player-avatar {
-    font-size: 20px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-    cursor: pointer;
+    width: 70%;
+    height: 70%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    pointer-events: auto;
 }
 
-.player-avatar:hover::after {
-    content: attr(data-player-name);
-    position: absolute;
-    top: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    z-index: 20;
-    pointer-events: none;
+.player-avatar img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
 }
 
 .player-name {
@@ -170,6 +158,8 @@
     text-overflow: ellipsis;
     max-width: 30px;
     text-align: center;
+    margin-top: -2px;
+    z-index: 3;
 }
 
 /* Game Controls */
