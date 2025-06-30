@@ -46,7 +46,8 @@ export function GameBoard() {
                                     'data-player-name': player.nickname
                                 }, Vnode('img', {
                                     src: './src/assets/0_Skeleton_Warrior_Idle_000.png',
-                                    alt: player.nickname || 'Player Avatar'
+                                    alt: player.nickname || 'Player Avatar',
+                                    style: player.direction === 'left' ? 'transform: scaleX(-1);' : 'transform: scaleX(1);'
                                 }))
                             ])
                         ]);

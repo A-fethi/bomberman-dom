@@ -256,7 +256,7 @@ class WebSocketManager {
             const gameState = getGameState();
             const updatedPlayers = gameState.players.map(player => 
                 player.id === message.playerId 
-                    ? { ...player, position: message.position }
+                    ? { ...player, position: message.position, direction: message.direction }
                     : player
             );
 

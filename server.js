@@ -37,7 +37,7 @@ class GameRoom {
         this.gameMap = null;
         this.winner = null;
         this.createdAt = Date.now();
-        
+
         // Timer management
         this.waitingTimer = null;
         this.countdownTimer = null;
@@ -58,7 +58,8 @@ class GameRoom {
             position: this.getSpawnPosition(this.players.size),
             bombs: 1,
             flameRange: 1,
-            speed: 1
+            speed: 1,
+            direction: 'right'
         });
 
         // Check and start timers after adding player
@@ -69,7 +70,7 @@ class GameRoom {
 
     removePlayer(playerId) {
         const removed = this.players.delete(playerId);
-        
+
         if (removed) {
             // If we no longer have minimum players, stop timers
             if (this.players.size < GAME_CONFIG.minPlayers) {
@@ -79,7 +80,7 @@ class GameRoom {
                     this.countdownTimer = null;
                     this.gameStatus = 'waiting';
                     this.countdown = null;
-                    
+
                     // Broadcast that countdown was cancelled
                     this.broadcast({
                         type: 'countdown_cancelled',
@@ -87,13 +88,13 @@ class GameRoom {
                     });
                 }
             }
-            
+
             if (this.players.size === 0) {
                 // Delete empty room
                 rooms.delete(this.roomId);
             }
         }
-        
+
         return removed;
     }
 
@@ -110,32 +111,32 @@ class GameRoom {
 
     startWaitingTimer() {
         if (this.waitingTimer) return; // Already started
-        
+
         this.waitingStartTime = Date.now();
         console.log(`⏰ Room ${this.roomId}: Starting waiting timer (${GAME_CONFIG.waitingTimeout}s)`);
-        
+
         // Broadcast timer start to all players
         this.broadcast({
             type: 'waiting_timer_started',
             waitingTimeLeft: GAME_CONFIG.waitingTimeout
         });
-        
+
         // Start real-time timer updates
         this.waitingTimerInterval = setInterval(() => {
             const timeLeft = Math.max(0, GAME_CONFIG.waitingTimeout - Math.floor((Date.now() - this.waitingStartTime) / 1000));
-            
+
             this.broadcast({
                 type: 'waiting_timer_update',
                 waitingTimeLeft: timeLeft
             });
-            
+
             if (timeLeft <= 0) {
                 clearInterval(this.waitingTimerInterval);
                 this.waitingTimerInterval = null;
                 this.handleWaitingTimeout();
             }
         }, 1000);
-        
+
         this.waitingTimer = setTimeout(() => {
             this.handleWaitingTimeout();
         }, GAME_CONFIG.waitingTimeout * 1000);
@@ -146,14 +147,14 @@ class GameRoom {
             clearTimeout(this.waitingTimer);
             this.waitingTimer = null;
         }
-        
+
         if (this.waitingTimerInterval) {
             clearInterval(this.waitingTimerInterval);
             this.waitingTimerInterval = null;
         }
-        
+
         console.log(`⏰ Room ${this.roomId}: Stopped waiting timer`);
-        
+
         // Broadcast timer stop to all players
         this.broadcast({
             type: 'waiting_timer_stopped'
@@ -162,7 +163,7 @@ class GameRoom {
 
     handleWaitingTimeout() {
         console.log(`⏰ Room ${this.roomId}: Waiting timeout reached with ${this.players.size} players`);
-        
+
         if (this.players.size >= GAME_CONFIG.minPlayers) {
             // Start the 10-second countdown
             this.startCountdown();
@@ -175,27 +176,27 @@ class GameRoom {
 
     startCountdown() {
         if (this.countdownTimer) return; // Already started
-        
+
         this.gameStatus = 'starting';
         this.countdown = GAME_CONFIG.countdownDuration;
         this.generateMap();
-        
+
         console.log(`🎮 Room ${this.roomId}: Starting countdown (${this.countdown}s)`);
-        
+
         // Broadcast countdown start
         this.broadcast({
             type: 'countdown_started',
             countdown: this.countdown
         });
-        
+
         this.countdownTimer = setInterval(() => {
             this.countdown--;
-            
+
             this.broadcast({
                 type: 'countdown_update',
                 countdown: this.countdown
             });
-            
+
             if (this.countdown <= 0) {
                 this.startGame();
             }
@@ -207,10 +208,10 @@ class GameRoom {
             clearInterval(this.countdownTimer);
             this.countdownTimer = null;
         }
-        
+
         this.gameStatus = 'playing';
         console.log(`🎮 Room ${this.roomId}: Game started!`);
-        
+
         this.broadcast({
             type: 'game_started',
             gameMap: this.gameMap
@@ -222,7 +223,7 @@ class GameRoom {
         if (this.players.size >= GAME_CONFIG.minPlayers && !this.waitingTimer && this.gameStatus === 'waiting') {
             this.startWaitingTimer();
         }
-        
+
         // If we have maximum players, stop waiting timer and start countdown immediately
         if (this.players.size >= GAME_CONFIG.maxPlayers && this.waitingTimer) {
             this.stopWaitingTimer();
@@ -248,7 +249,7 @@ class GameRoom {
                 }
                 // Safe spawn areas (corners)
                 else if ((x <= 2 && y <= 2) || (x >= width - 3 && y <= 2) ||
-                         (x <= 2 && y >= height - 3) || (x >= width - 3 && y >= height - 3)) {
+                    (x <= 2 && y >= height - 3) || (x >= width - 3 && y >= height - 3)) {
                     map[y][x] = { type: 'empty' };
                 }
                 // Random destructible blocks (70% chance)
@@ -294,12 +295,12 @@ class GameRoom {
                 player.ws.send(JSON.stringify(message));
             } else if (playerId === excludePlayerId) {
                 if (message.type !== 'player_moved' && message.type !== 'bomb_placed') {
-                console.log('📤 Server: Skipping excluded player:', player.nickname);
+                    console.log('📤 Server: Skipping excluded player:', player.nickname);
                 } else {
-                console.log('📤 Server: Player moved or bomb placed, sending to all players:', player.nickname);
+                    console.log('📤 Server: Player moved or bomb placed, sending to all players:', player.nickname);
 
-                player.ws.send(JSON.stringify(message));
-            }
+                    player.ws.send(JSON.stringify(message));
+                }
             } else if (!player.ws) {
                 console.log('❌ Server: Player has no WebSocket:', player.nickname);
             }
@@ -325,7 +326,7 @@ function findOrCreateRoom() {
 // Phase 3: WebSocket connection handling
 wss.on('connection', (ws, req) => {
     console.log('🟢 New WebSocket connection:', req.socket.remoteAddress);
-    
+
     let playerId = null;
     let currentRoom = null;
 
@@ -342,27 +343,27 @@ wss.on('connection', (ws, req) => {
                         currentRoom = result.currentRoom;
                     }
                     break;
-                    
+
                 case 'start_game':
                     handleStartGame(ws, message, playerId, currentRoom);
                     break;
-                    
+
                 case 'player_move':
                     handlePlayerMove(ws, message, playerId, currentRoom);
                     break;
-                    
+
                 case 'place_bomb':
                     handlePlaceBomb(ws, message, playerId, currentRoom);
                     break;
-                    
+
                 case 'chat_message':
                     handleChatMessage(ws, message, playerId, currentRoom);
                     break;
-                    
+
                 case 'leave_game':
                     handleLeaveGame(ws, message, playerId, currentRoom);
                     break;
-                    
+
                 default:
                     console.warn('⚠️ Unknown message type:', message.type);
             }
@@ -385,9 +386,9 @@ wss.on('connection', (ws, req) => {
     // Phase 3: Message handlers
     function handleJoinGame(ws, message, playerId, currentRoom) {
         const { nickname } = message;
-        
+
         console.log('🟢 Server: handleJoinGame called for nickname:', nickname);
-        
+
         if (!nickname || nickname.length < 2 || nickname.length > 15) {
             ws.send(JSON.stringify({
                 type: 'error',
@@ -399,11 +400,11 @@ wss.on('connection', (ws, req) => {
         // Generate unique player ID and update outer scope
         playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         console.log('🟢 Server: Generated playerId:', playerId);
-        
+
         // Find or create room and update outer scope
         currentRoom = findOrCreateRoom();
         console.log('🟢 Server: Found/created room:', currentRoom.roomId, 'with', currentRoom.players.size, 'players');
-        
+
         // Add player to room
         const result = currentRoom.addPlayer(playerId, {
             nickname,
@@ -458,7 +459,7 @@ wss.on('connection', (ws, req) => {
             // Start countdown
             const countdownInterval = setInterval(() => {
                 currentRoom.countdown--;
-                
+
                 currentRoom.broadcast({
                     type: 'countdown_update',
                     countdown: currentRoom.countdown
@@ -467,7 +468,7 @@ wss.on('connection', (ws, req) => {
                 if (currentRoom.countdown <= 0) {
                     clearInterval(countdownInterval);
                     currentRoom.gameStatus = 'playing';
-                    
+
                     currentRoom.broadcast({
                         type: 'game_started',
                         gameMap: currentRoom.gameMap
@@ -483,36 +484,47 @@ wss.on('connection', (ws, req) => {
         if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
         console.log(message);
         console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
-                const { direction } = message;
+        const { direction } = message;
         const player = currentRoom.players.get(playerId);
-        
+
         if (!player) return;
 
         // Phase 3: Basic movement (will be enhanced in Phase 5)
         const newPosition = { ...player.position };
-        
+
         switch (direction) {
             case 'up': newPosition.y = Math.max(1, newPosition.y - 1); break;
             case 'down': newPosition.y = Math.min(11, newPosition.y + 1); break;
-            case 'left': newPosition.x = Math.max(1, newPosition.x - 1); break;
-            case 'right': newPosition.x = Math.min(13, newPosition.x + 1); break;
+            case 'left': newPosition.x = Math.max(1, newPosition.x - 1); player.direction = 'left'; break;
+            case 'right': newPosition.x = Math.min(13, newPosition.x + 1); player.direction = 'right'; break;
         }
 
         // Check if position is valid (not a wall)
-        if (currentRoom.gameMap[newPosition.y][newPosition.x].type !== 'wall') {
+        if (isValidPosition(newPosition, currentRoom.gameMap)) {
             player.position = newPosition;
-            
+            // Only update direction for left/right above
+
             currentRoom.broadcast({
                 type: 'player_moved',
                 playerId,
-                position: newPosition
+                position: newPosition,
+                direction: player.direction // Always send current direction
             }, playerId);
         }
     }
 
+    function isValidPosition(position, gameMap) {
+        // Check if position is within bounds and not a wall or block
+        if (position.x < 0 || position.x >= gameMap[0].length || position.y < 0 || position.y >= gameMap.length) {
+            return false;
+        }
+        const cell = gameMap[position.y][position.x];
+        return cell.type !== 'wall' && cell.type !== 'block';
+    }
+
     function handlePlaceBomb(ws, message, playerId, currentRoom) {
         if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
-        
+
         const player = currentRoom.players.get(playerId);
         if (!player) return;
 
@@ -528,10 +540,10 @@ wss.on('connection', (ws, req) => {
 
     function handleChatMessage(ws, message, playerId, currentRoom) {
         if (!currentRoom || !playerId) return;
-        
+
         const { text } = message;
         const player = currentRoom.players.get(playerId);
-        
+
         if (!player || !text || text.trim().length === 0) return;
 
         const chatMessage = {
@@ -592,7 +604,7 @@ server.on('request', (req, res) => {
     try {
         const content = readFileSync(filePath);
         const ext = extname(filePath);
-        
+
         // Set appropriate content type
         const contentType = {
             '.html': 'text/html',
