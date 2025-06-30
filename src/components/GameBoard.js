@@ -39,8 +39,10 @@ export function GameBoard() {
                         return Vnode('div', { class: cellClass }, [
                             cellContent,
                             player && Vnode('div', { class: 'player-marker' }, [
-                                Vnode('div', { class: 'player-avatar' }, '👤'),
-                                Vnode('div', { class: 'player-name' }, player.nickname)
+                                Vnode('div', { 
+                                    class: 'player-avatar',
+                                    'data-player-name': player.nickname
+                                }, '👻')
                             ])
                         ]);
                     })
