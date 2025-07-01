@@ -491,31 +491,94 @@ wss.on('connection', (ws, req) => {
     function handlePlayerMove(ws, message, playerId, currentRoom) {
         if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
         console.log(message);
+        const player = currentRoom.players.get(playerId);
+        if (!player || player.eliminated) return; // Prevent eliminated players from moving
         console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
         const { direction } = message;
-        const player = currentRoom.players.get(playerId);
-
-        if (!player) return;
-
-        // Phase 3: Basic movement (will be enhanced in Phase 5)
+        
+        // Calculate movement distance based on speed power-up
+        const speed = player.speed || 1;
+        const moveDistance = Math.floor(speed); // Integer movement for grid-based system
+        
+        // Phase 3: Enhanced movement with speed power-up support
         const newPosition = { ...player.position };
 
         switch (direction) {
-            case 'up': newPosition.y = Math.max(1, newPosition.y - 1); break;
-            case 'down': newPosition.y = Math.min(11, newPosition.y + 1); break;
-            case 'left': newPosition.x = Math.max(1, newPosition.x - 1); player.direction = 'left'; break;
-            case 'right': newPosition.x = Math.min(13, newPosition.x + 1); player.direction = 'right'; break;
+            case 'up': 
+                newPosition.y = Math.max(1, newPosition.y - moveDistance); 
+                break;
+            case 'down': 
+                newPosition.y = Math.min(11, newPosition.y + moveDistance); 
+                break;
+            case 'left': 
+                newPosition.x = Math.max(1, newPosition.x - moveDistance); 
+                player.direction = 'left'; 
+                break;
+            case 'right': 
+                newPosition.x = Math.min(13, newPosition.x + moveDistance); 
+                player.direction = 'right'; 
+                break;
         }
 
-        // Check if position is valid (not a wall)
+        // Check if position is valid (not a wall) and handle multi-cell movement
         if (isValidPosition(newPosition, currentRoom.gameMap)) {
-            const isOccupied = Array.from(currentRoom.players.values()).some(
-                p => p.id !== playerId && p.position.x === newPosition.x && p.position.y === newPosition.y
-            );
-            if (isOccupied) {
+            // For multi-cell movement, check all cells in the path
+            const pathValid = isPathValid(player.position, newPosition, currentRoom.gameMap);
+            if (!pathValid) {
+                console.log(`🚫 ${player.nickname}: Invalid path for speed ${speed} movement`);
                 return;
             }
+            
+            // Player collision check: prevent moving into a cell occupied by another player
+            const isOccupied = Array.from(currentRoom.players.values()).some(
+                p => p.id !== playerId && !p.eliminated && p.position.x === newPosition.x && p.position.y === newPosition.y
+            );
+            if (isOccupied) {
+                // Cell is occupied by another player, do not move
+                return;
+            }
+
+            // Check for power-up collection
+            const cell = currentRoom.gameMap[newPosition.y][newPosition.x];
+            if (cell.type === 'powerup') {
+                // Collect power-up
+                const powerType = cell.power;
+                switch (powerType) {
+                    case 'bomb':
+                        player.bombs = Math.min(player.bombs + 1, 5); // Max 5 bombs
+                        console.log(`💣 ${player.nickname} collected bomb power-up. Bombs: ${player.bombs}`);
+                        break;
+                    case 'flame':
+                        player.flameRange = Math.min(player.flameRange + 1, 5); // Max flame range 5
+                        console.log(`🔥 ${player.nickname} collected flame power-up. Range: ${player.flameRange}`);
+                        break;
+                    case 'speed':
+                        player.speed = Math.min(player.speed + 0.5, 3); // Max speed 3
+                        console.log(`⚡ ${player.nickname} collected speed power-up. Speed: ${player.speed}`);
+                        break;
+                }
+
+                // Remove power-up from map
+                currentRoom.gameMap[newPosition.y][newPosition.x] = { type: 'empty' };
+
+                // Broadcast power-up collection
+                currentRoom.broadcast({
+                    type: 'powerup_collected',
+                    playerId,
+                    position: newPosition,
+                    powerType,
+                    playerStats: {
+                        bombs: player.bombs,
+                        flameRange: player.flameRange,
+                        speed: player.speed
+                    }
+                });
+
+                console.log(`🎁 ${player.nickname} collected ${powerType} power-up at`, newPosition);
+            }
+
             player.position = newPosition;
+            // Only update direction for left/right above
 
             currentRoom.broadcast({
                 type: 'player_moved',
@@ -535,11 +598,38 @@ wss.on('connection', (ws, req) => {
         return cell.type !== 'wall' && cell.type !== 'block';
     }
 
+    function isPathValid(startPos, endPos, gameMap) {
+        // Check if all cells in the movement path are valid
+        const dx = endPos.x - startPos.x;
+        const dy = endPos.y - startPos.y;
+        
+        // Determine movement direction
+        const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+        const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+        
+        // Check each cell in the path
+        let currentX = startPos.x;
+        let currentY = startPos.y;
+        
+        while (currentX !== endPos.x || currentY !== endPos.y) {
+            // Move one step towards the target
+            if (currentX !== endPos.x) currentX += stepX;
+            if (currentY !== endPos.y) currentY += stepY;
+            
+            // Check if this cell is valid
+            if (!isValidPosition({ x: currentX, y: currentY }, gameMap)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
     function handlePlaceBomb(ws, message, playerId, currentRoom) {
         if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
 
         const player = currentRoom.players.get(playerId);
-        if (!player) return;
+        if (!player || player.eliminated) return; // Prevent eliminated players from placing bombs
 
         // Store the bomb's position at placement time
         const bombPosition = { x: player.position.x, y: player.position.y };
@@ -597,15 +687,29 @@ wss.on('connection', (ws, req) => {
             currentRoom.players.forEach((p, pid) => {
                 if (affectedCells.some(cell => cell.x === p.position.x && cell.y === p.position.y)) {
                     p.lives = Math.max(0, (p.lives || 1) - 1);
-                    damagedPlayers.push({ id: pid, lives: p.lives, nickname: p.nickname });
                     if (p.lives === 0) {
-                        // Remove player from game
+                        // Mark player as eliminated but keep them as spectator
+                        p.eliminated = true;
                         currentRoom.broadcast({
                             type: 'player_eliminated',
                             playerId: pid,
                             nickname: p.nickname
                         });
-                        currentRoom.removePlayer(pid);
+                    } else {
+                        // Only add to damagedPlayers if they're still alive
+                        damagedPlayers.push({ id: pid, lives: p.lives, nickname: p.nickname });
+                        // Respawn player at their original spawn position
+                        // Find their index in the room's player list
+                        const playerIndex = Array.from(currentRoom.players.keys()).indexOf(pid);
+                        const spawnPos = currentRoom.getSpawnPosition(playerIndex);
+                        p.position = { ...spawnPos };
+                        // Broadcast new position
+                        currentRoom.broadcast({
+                            type: 'player_moved',
+                            playerId: pid,
+                            position: p.position,
+                            direction: p.direction
+                        });
                     }
                 }
             });
@@ -626,6 +730,14 @@ wss.on('connection', (ws, req) => {
                     nickname: dp.nickname
                 });
             });
+
+            // Remove bomb after explosion
+            currentRoom.broadcast({
+                type: 'bomb_removed',
+                position: bombPosition
+            });
+
+            console.log(`💥 Bomb exploded and removed at`, bombPosition);
         }, 2000);
     }
 

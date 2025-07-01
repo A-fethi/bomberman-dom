@@ -36,19 +36,22 @@ export function GameBoard() {
                                 break;
                             case 'powerup':
                                 cellClass += ' powerup';
-                                let powerupImg = './src/assets/Icons_02.png';
+                                let powerupEmoji = '❓';
                                 let altText = 'Power-up';
                                 if (cell.power === 'bomb') {
-                                    powerupImg = './src/assets/Icons_02.png';
+                                    powerupEmoji = '💣';
                                     altText = 'Bomb Power-up';
                                 } else if (cell.power === 'flame') {
-                                    powerupImg = './src/assets/Explosion_1.png';
+                                    powerupEmoji = '🔥';
                                     altText = 'Flame Power-up';
                                 } else if (cell.power === 'speed') {
-                                    powerupImg = './src/assets/empty.png'; // Replace with speed icon if available
+                                    powerupEmoji = '🏃';
                                     altText = 'Speed Power-up';
+                                } else if (cell.power === 'life' || cell.power === 'heart') {
+                                    powerupEmoji = '❤️';
+                                    altText = 'Extra Life';
                                 }
-                                cellContent = Vnode('img', { class: 'cell-img', src: powerupImg, alt: altText });
+                                cellContent = Vnode('span', { class: 'powerup-emoji', title: altText }, powerupEmoji);
                                 break;
                             case 'empty':
                                 cellClass += ' empty';
@@ -70,20 +73,29 @@ export function GameBoard() {
                             explosionNode = Vnode('div', { class: 'Explosion' });
                         }
                         // Check if a player is at this cell
-                        const player = gameState.players && gameState.players.find(p => p.position && p.position.x === x && p.position.y === y);
+                        const player = gameState.players && gameState.players.find(p => p.position && p.position.x === x && p.position.y === y && !p.eliminated);
+                        const isLocal = player && player.nickname === gameState.nickname;
                         return Vnode('div', { class: cellClass }, [
                             cellContent,
                             bombNode,
                             explosionNode,
                             player && Vnode('div', { class: 'player-marker' }, [
                                 Vnode('div', { 
-                                    class: 'player-avatar',
+                                    class: 'player-avatar' + (isLocal ? ' local-player' : '') + (player.speed > 1 ? ' speed-boost' : ''),
                                     'data-player-name': player.nickname
-                                }, Vnode('img', {
-                                    src: './src/assets/0_Skeleton_Warrior_Idle_000.png',
-                                    alt: player.nickname || 'Player Avatar',
-                                    style: player.direction === 'left' ? 'transform: scaleX(-1);' : 'transform: scaleX(1);'
-                                }))
+                                }, [
+                                    isLocal && Vnode('span', { class: 'local-badge', title: 'You' }, '🟢'),
+                                    Vnode('img', {
+                                        src: './src/assets/0_Skeleton_Warrior_Idle_000.png',
+                                        alt: player.nickname || 'Player Avatar',
+                                        style: player.direction === 'left' ? 'transform: scaleX(-1);' : 'transform: scaleX(1);'
+                                    }),
+                                    // Speed boost indicator
+                                    player.speed > 1 && Vnode('div', { 
+                                        class: 'speed-indicator', 
+                                        title: `Speed: ${player.speed}` 
+                                    }, '⚡')
+                                ])
                             ])
                         ]);
                     })
@@ -92,32 +104,48 @@ export function GameBoard() {
         );
     };
     
-    return Vnode('div', { class: 'game-board' }, [
-        Vnode('div', { class: 'game-header' }, [
-            Vnode('h2', {}, 'Bomberman Game'),
-            Vnode('div', { class: 'game-info' }, [
-                Vnode('span', {}, `Room: ${gameState.roomId}`),
-                Vnode('span', {}, `Players: ${gameState.players.length}`),
-                Vnode('span', {}, `Status: ${gameState.gameStatus}`)
-            ])
-        ]),
-        Vnode('div', { class: 'game-area' }, [
-            Vnode('div', { class: 'map-container' }, [
-                Vnode('div', { class: 'game-map-wrapper' }, [
-                    renderMap()
+    return Vnode('div', { class: 'game-board-layout' }, [
+        Vnode('div', { class: 'game-board' }, [
+            Vnode('div', { class: 'game-header' }, [
+                Vnode('h2', {}, 'Bomberman Game'),
+                Vnode('div', { class: 'game-info' }, [
+                    Vnode('span', {}, `Room: ${gameState.roomId}`),
+                    Vnode('span', {}, `Players: ${gameState.players.length}`),
+                    Vnode('span', {}, `Status: ${gameState.gameStatus}`)
                 ])
             ]),
-            // Vnode('div', { class: 'game-controls' }, [
-            //     Vnode('button', {
-            //         onclick: () => {
-            //             updateGameState({
-            //                 ...getGameState(),
-            //                 currentScreen: 'gameOver',
-            //                 winner: gameState.nickname
-            //             });
-            //         }
-            //     }, 'End Game (Test)')
-            // ])
+            Vnode('div', { class: 'game-area' }, [
+                Vnode('div', { class: 'map-container' }, [
+                    Vnode('div', { class: 'game-map-wrapper' }, [
+                        renderMap()
+                    ])
+                ]),
+                // Vnode('div', { class: 'game-controls' }, [ ... ])
+            ])
+        ]),
+        Vnode('div', { class: 'sidebar' }, [
+            Vnode('div', { class: 'sidebar-section' }, [
+                Vnode('h3', {}, 'Players'),
+                ...gameState.players.map(player =>
+                    Vnode('div', { class: 'sidebar-player' + (player.nickname === gameState.nickname ? ' local' : '') + (player.eliminated ? ' eliminated' : '') }, [
+                        Vnode('span', { class: 'sidebar-player-name' }, player.nickname),
+                        Vnode('span', { class: 'sidebar-player-lives' }, player.eliminated ? '💀' : '❤️'.repeat(player.lives || 0))
+                    ])
+                )
+            ]),
+            Vnode('div', { class: 'sidebar-section' }, [
+                Vnode('h3', {}, 'Your Power-ups'),
+                (() => {
+                    const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
+                    if (!localPlayer) return Vnode('div', {}, 'None');
+                    const powerups = [];
+                    if (localPlayer.bombs > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `💣 x${localPlayer.bombs}`));
+                    if (localPlayer.flameRange > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🔥 x${localPlayer.flameRange}`));
+                    if (localPlayer.speed > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🏃 x${localPlayer.speed}`));
+                    if (localPlayer.lives > 3) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `❤️ x${localPlayer.lives}`));
+                    return powerups.length ? powerups : Vnode('div', {}, 'None');
+                })()
+            ])
         ])
     ]);
 } 

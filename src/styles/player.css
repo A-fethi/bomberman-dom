@@ -1,6 +1,3 @@
-
-
-
 .Player {
     position: absolute;
     background: url(../assets/0_Skeleton_Warrior_Idle_000.png);
@@ -8,4 +5,137 @@
     background-position: center;
     /* border-radius: 50%; */
     z-index: 2;
+}
+
+.local-player {
+    border: 3px solid #4CAF50 !important;
+    box-shadow: 0 0 10px #4CAF5088;
+    position: relative;
+}
+
+.local-badge {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 1.2em;
+    z-index: 3;
+    background: white;
+    border-radius: 50%;
+    padding: 0 2px;
+    border: 1px solid #4CAF50;
+    box-shadow: 0 0 4px #4CAF5044;
+}
+
+.game-board-layout {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 220px;
+    background: #23272e;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 10px;
+    border-left: 2px solid #444;
+    box-shadow: 0 0 10px #0002;
+    gap: 30px;
+    z-index: 10;
+}
+.sidebar-section {
+    margin-bottom: 20px;
+}
+.sidebar-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    color: #4CAF50;
+    letter-spacing: 1px;
+}
+.sidebar-player {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 1em;
+    border-bottom: 1px solid #3333;
+    gap: 8px;
+}
+.sidebar-player.local {
+    font-weight: bold;
+    color: #4CAF50;
+}
+.sidebar-player-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sidebar-player-lives {
+    font-size: 1.2em;
+    letter-spacing: 2px;
+}
+.sidebar-powerup {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 1.3em;
+    background: #fff2;
+    border-radius: 6px;
+    padding: 2px 8px;
+    color: #fff;
+    border: 1px solid #4CAF50;
+}
+.sidebar-player.eliminated {
+    opacity: 0.5;
+    color: #888;
+    text-decoration: line-through;
+}
+.sidebar-player.eliminated .sidebar-player-name {
+    color: #888;
+}
+
+/* Speed boost indicator */
+.speed-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #FFD700;
+    color: #000;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #FFA500;
+    box-shadow: 0 0 8px #FFD700;
+    animation: speedPulse 1.5s ease-in-out infinite;
+    z-index: 4;
+}
+
+.speed-boost {
+    animation: speedGlow 2s ease-in-out infinite;
+}
+
+@keyframes speedPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 8px #FFD700;
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 15px #FFD700, 0 0 25px #FFA500;
+    }
+}
+
+@keyframes speedGlow {
+    0%, 100% {
+        box-shadow: 0 0 10px #4CAF5088;
+    }
+    50% {
+        box-shadow: 0 0 15px #4CAF5088, 0 0 25px #FFD700;
+    }
 }

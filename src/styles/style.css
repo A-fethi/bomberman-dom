@@ -423,6 +423,70 @@ body {
     contain: layout style paint;
 }
 
+/* Power-up notification */
+.powerup-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #FFD700;
+    border-radius: 15px;
+    padding: 20px 30px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    animation: powerupNotification 3s ease-in-out forwards;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 20px #FFD700;
+}
+
+.powerup-notification-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.powerup-emoji {
+    font-size: 2em;
+    animation: powerupPulse 1s ease-in-out infinite;
+}
+
+.powerup-text {
+    font-size: 1.2em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes powerupNotification {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+@keyframes powerupPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
 /* Reduce repaints */
 .game-app * {
     backface-visibility: hidden;

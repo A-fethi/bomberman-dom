@@ -213,6 +213,106 @@ class WebSocketManager {
                             updateGameState({ gameMap: newMap });
                         });
                         break;
+
+                    case 'player_damaged':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            const updatedPlayers = gameState.players.map(player => 
+                                player.id === message.playerId 
+                                    ? { ...player, lives: message.lives }
+                                    : player
+                            );
+                            updateGameState({
+                                players: updatedPlayers
+                            });
+                        });
+                        break;
+                    case 'player_eliminated':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            const updatedPlayers = gameState.players.map(player => 
+                                player.id === message.playerId 
+                                    ? { ...player, eliminated: true, lives: 0 }
+                                    : player
+                            );
+                            updateGameState({
+                                players: updatedPlayers
+                            });
+                        });
+                        break;
+
+                    case 'powerup_collected':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            // Update player stats
+                            const updatedPlayers = gameState.players.map(player => 
+                                player.id === message.playerId 
+                                    ? { ...player, ...message.playerStats }
+                                    : player
+                            );
+                            
+                            // Update map to remove power-up
+                            let newMap = gameState.gameMap;
+                            if (gameState.gameMap) {
+                                newMap = gameState.gameMap.map((row, y) =>
+                                    row.map((cell, x) =>
+                                        (x === message.position.x && y === message.position.y)
+                                            ? { type: 'empty' }
+                                            : cell
+                                    )
+                                );
+                            }
+                            
+                            // Show power-up notification if it's the local player
+                            const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
+                            let powerupNotification = null;
+                            if (localPlayer && localPlayer.id === message.playerId) {
+                                const powerupEmojis = {
+                                    'bomb': '💣',
+                                    'flame': '🔥',
+                                    'speed': '⚡'
+                                };
+                                const powerupNames = {
+                                    'bomb': 'Bomb Capacity',
+                                    'flame': 'Flame Range',
+                                    'speed': 'Movement Speed'
+                                };
+                                powerupNotification = {
+                                    emoji: powerupEmojis[message.powerType] || '🎁',
+                                    text: `${powerupNames[message.powerType] || message.powerType} +1!`
+                                };
+                                
+                                // Auto-hide notification after 3 seconds
+                                setTimeout(() => {
+                                    updateGameState({ powerupNotification: null });
+                                }, 3000);
+                            }
+                            
+                            updateGameState({
+                                players: updatedPlayers,
+                                gameMap: newMap,
+                                powerupNotification
+                            });
+                            
+                            console.log(`🎁 Power-up collected: ${message.powerType} by player ${message.playerId}`);
+                        });
+                        break;
+
+                    case 'bomb_removed':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            // Remove bomb from bombs array
+                            const updatedBombs = (gameState.bombs || []).filter(bomb => 
+                                !(bomb.x === message.position.x && bomb.y === message.position.y)
+                            );
+                            
+                            updateGameState({
+                                bombs: updatedBombs
+                            });
+                            
+                            console.log(`💥 Bomb removed at position:`, message.position);
+                        });
+                        break;
                         
                     default:
                         console.warn('⚠️ Client: Unknown message type:', message.type);

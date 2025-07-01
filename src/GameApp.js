@@ -46,7 +46,9 @@ const initialState = {
         isOptimal: true
     },
     bombs: [],
-    explosions: []
+    explosions: [],
+    // Power-up notifications
+    powerupNotification: null
 };
 
 export const [getGameState, setGameState] = createState(initialState);
@@ -190,6 +192,14 @@ export function GameApp() {
                 Vnode('div', { class: 'performance-help' }, [
                     Vnode('small', {}, 'Press Ctrl+P to toggle • Target: 60 FPS • No frame drops')
                 ])
+            ])
+        ]),
+        
+        // Power-up notification overlay
+        gameState.powerupNotification && Vnode('div', { class: 'powerup-notification' }, [
+            Vnode('div', { class: 'powerup-notification-content' }, [
+                Vnode('span', { class: 'powerup-emoji' }, gameState.powerupNotification.emoji),
+                Vnode('span', { class: 'powerup-text' }, gameState.powerupNotification.text)
             ])
         ]),
         
