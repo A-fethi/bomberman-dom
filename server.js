@@ -4,7 +4,6 @@ import { extname, join } from 'path';
 import { WebSocketServer } from 'ws';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { log } from 'console';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,16 +49,23 @@ class GameRoom {
             return { success: false, error: 'Room is full' };
         }
 
+        let initialDirection = 'right'
+        const spawnPosition = this.getSpawnPosition(this.players.size);
+        
+        if ((spawnPosition.x === 13 && spawnPosition.y === 1) || (spawnPosition.x === 13 && spawnPosition.y === 11)) {
+            initialDirection = 'left'
+        }
+
         this.players.set(playerId, {
             ...playerData,
             id: playerId,
             joinedAt: Date.now(),
             lives: 3,
-            position: this.getSpawnPosition(this.players.size),
+            position: spawnPosition,
             bombs: 1,
             flameRange: 1,
             speed: 1,
-            direction: 'right'
+            direction: initialDirection
         });
 
         // Check and start timers after adding player
@@ -276,7 +282,8 @@ class GameRoom {
                 position: player.position,
                 bombs: player.bombs,
                 flameRange: player.flameRange,
-                speed: player.speed
+                speed: player.speed,
+                direction: player.direction
             })),
             gameStatus: this.gameStatus,
             countdown: this.countdown,
@@ -441,7 +448,8 @@ wss.on('connection', (ws, req) => {
                 position: result.player.position,
                 bombs: result.player.bombs,
                 flameRange: result.player.flameRange,
-                speed: result.player.speed
+                speed: result.player.speed,
+                direction: result.player.direction
             }
         };
         console.log('📤 Server: Broadcasting player_joined to other players:', broadcastMessage);
