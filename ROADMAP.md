@@ -64,22 +64,22 @@ Build a multiplayer Bomberman game with 2-4 players, WebSocket communication, ch
 - [x] Ensure safe spawn areas in corners
 - [x] Add proper map validation
 
-## Phase 4: Client-Server Communication (Day 7-8)
+## Phase 4: Client-Server Communication (Day 7-8) 
 
-### 4.1 WebSocket Manager
+### 4.1 WebSocket Manager 
 - [ ] Create WebSocketManager.js
 - [ ] Implement connection handling
 - [ ] Add reconnection logic
 - [ ] Handle message parsing and routing
 
-### 4.2 Message Types
+### 4.2 Message Types 
 - [ ] Implement join_game messages
 - [ ] Add player_move messages
 - [ ] Create bomb_placed messages
 - [ ] Add chat_message handling
 - [ ] Implement game state synchronization
 
-### 4.3 Real-time Updates
+### 4.3 Real-time Updates 
 - [ ] Sync player positions
 - [ ] Update game state across clients
 - [ ] Handle player damage and lives

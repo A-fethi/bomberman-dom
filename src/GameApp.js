@@ -44,7 +44,9 @@ const initialState = {
         frameDrops: 0,
         warnings: [],
         isOptimal: true
-    }
+    },
+    bombs: [],
+    explosions: []
 };
 
 export const [getGameState, setGameState] = createState(initialState);
@@ -100,6 +102,13 @@ function setupMovementControls() {
     window.addEventListener('keyup', (e) => {
         const gameState = getGameState();
         if (gameState.currentScreen !== 'game') return;
+
+       
+        if (e.key === ' ') {
+            webSocketManager.placeBomb();
+            e.preventDefault();
+            return;
+        }
 
         let direction = null;
         switch (e.key) {
@@ -224,6 +233,10 @@ function handleNicknameSubmit(nickname) {
 
 function handleStartGame() {
     webSocketManager.startGame();
+    setGameState({
+        bombs: [],
+        explosions: []
+    });
 }
 
 function handleLeaveRoom() {
@@ -269,7 +282,9 @@ function handlePlayAgain() {
         gameStatus: 'waiting',
         countdown: null,
         gameMap: null,
-        winner: null
+        winner: null,
+        bombs: [],
+        explosions: []
     });
 }
 
@@ -281,7 +296,9 @@ function handleBackToMenu() {
         gameStatus: 'waiting',
         countdown: null,
         gameMap: null,
-        chatMessages: []
+        chatMessages: [],
+        bombs: [],
+        explosions: []
     });
 }
 

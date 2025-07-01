@@ -172,6 +172,48 @@ class WebSocketManager {
                         console.error('❌ Client: Server error:', message.message);
                         break;
                         
+                    case 'explosion':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            const explosions = (gameState.explosions || []);
+                            // Update the map: turn affected cells to empty (unless already a power-up)
+                            let newMap = gameState.gameMap;
+                            if (gameState.gameMap && message.affectedCells) {
+                                newMap = gameState.gameMap.map((row, y) =>
+                                    row.map((cell, x) => {
+                                        if (message.affectedCells.some(c => c.x === x && c.y === y)) {
+                                            // If not already a power-up, set to empty
+                                            if (cell.type !== 'powerup') {
+                                                return { type: 'empty' };
+                                            }
+                                        }
+                                        return cell;
+                                    })
+                                );
+                            }
+                            updateGameState({
+                                explosions: [...explosions, { position: message.position, affectedCells: message.affectedCells, timestamp: Date.now() }],
+                                gameMap: newMap
+                            });
+                        });
+                        break;
+                        
+                    case 'powerup_spawned':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            if (!gameState.gameMap) return;
+                            // Overwrite the cell with the power-up
+                            const newMap = gameState.gameMap.map((row, y) =>
+                                row.map((cell, x) =>
+                                    (x === message.position.x && y === message.position.y)
+                                        ? { type: 'powerup', power: message.power }
+                                        : cell
+                                )
+                            );
+                            updateGameState({ gameMap: newMap });
+                        });
+                        break;
+                        
                     default:
                         console.warn('⚠️ Client: Unknown message type:', message.type);
                 }
@@ -267,8 +309,14 @@ class WebSocketManager {
     }
 
     handleBombPlaced(message) {
-        // Phase 3: Basic bomb handling (will be enhanced in Phase 5)
-        console.log('💣 Bomb placed at:', message.position);
+        // Track bombs in game state for animation
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const bombs = (gameState.bombs || []);
+            updateGameState({
+                bombs: [...bombs, { x: message.position.x, y: message.position.y, timestamp: Date.now() }]
+            });
+        });
     }
 
     // Phase 3: Client action methods

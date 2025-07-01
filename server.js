@@ -501,8 +501,13 @@ wss.on('connection', (ws, req) => {
 
         // Check if position is valid (not a wall)
         if (isValidPosition(newPosition, currentRoom.gameMap)) {
+            const isOccupied = Array.from(currentRoom.players.values()).some(
+                p => p.id !== playerId && p.position.x === newPosition.x && p.position.y === newPosition.y
+            );
+            if (isOccupied) {
+                return;
+            }
             player.position = newPosition;
-            // Only update direction for left/right above
 
             currentRoom.broadcast({
                 type: 'player_moved',
@@ -528,14 +533,92 @@ wss.on('connection', (ws, req) => {
         const player = currentRoom.players.get(playerId);
         if (!player) return;
 
-        // Phase 3: Basic bomb placement (will be enhanced in Phase 5)
+        // Store the bomb's position at placement time
+        const bombPosition = { x: player.position.x, y: player.position.y };
+
+        // Broadcast bomb placement immediately
         currentRoom.broadcast({
             type: 'bomb_placed',
             playerId,
-            position: player.position
+            position: bombPosition
         });
 
-        console.log(`💣 Bomb placed by ${player.nickname} at`, player.position);
+        console.log(`💣 Bomb placed by ${player.nickname} at`, bombPosition);
+
+        // Simulate bomb explosion after 2 seconds
+        setTimeout(() => {
+            const explosionRange = player.flameRange || 1;
+            const directions = [
+                { dx: 0, dy: 0 }, // center
+                { dx: 1, dy: 0 }, // right
+                { dx: -1, dy: 0 }, // left
+                { dx: 0, dy: 1 }, // down
+                { dx: 0, dy: -1 } // up
+            ];
+            let affectedCells = [];
+            directions.forEach(dir => {
+                for (let i = 0; i <= explosionRange; i++) {
+                    const x = bombPosition.x + dir.dx * i;
+                    const y = bombPosition.y + dir.dy * i;
+                    // Stop at walls
+                    if (x < 0 || y < 0 || y >= currentRoom.gameMap.length || x >= currentRoom.gameMap[0].length) break;
+                    const cell = currentRoom.gameMap[y][x];
+                    if (cell.type === 'wall') break;
+                    affectedCells.push({ x, y });
+                    if (cell.type === 'block') {
+                        // Destroy block
+                        currentRoom.gameMap[y][x] = { type: 'empty' };
+                        // 30% chance to spawn a power-up
+                        if (Math.random() < 0.3) {
+                            const powerTypes = ['bomb', 'flame', 'speed'];
+                            const powerType = powerTypes[Math.floor(Math.random() * powerTypes.length)];
+                            currentRoom.gameMap[y][x] = { type: 'powerup', power: powerType };
+                            currentRoom.broadcast({
+                                type: 'powerup_spawned',
+                                position: { x, y },
+                                power: powerType
+                            });
+                        }
+                        break; // Stop explosion at block
+                    }
+                }
+            });
+
+            // Damage players in affected cells
+            let damagedPlayers = [];
+            currentRoom.players.forEach((p, pid) => {
+                if (affectedCells.some(cell => cell.x === p.position.x && cell.y === p.position.y)) {
+                    p.lives = Math.max(0, (p.lives || 1) - 1);
+                    damagedPlayers.push({ id: pid, lives: p.lives, nickname: p.nickname });
+                    if (p.lives === 0) {
+                        // Remove player from game
+                        currentRoom.broadcast({
+                            type: 'player_eliminated',
+                            playerId: pid,
+                            nickname: p.nickname
+                        });
+                        currentRoom.removePlayer(pid);
+                    }
+                }
+            });
+
+            // Broadcast explosion
+            currentRoom.broadcast({
+                type: 'explosion',
+                position: bombPosition,
+                affectedCells
+            });
+
+            // Broadcast damaged players
+            damagedPlayers.forEach(dp => {
+                currentRoom.broadcast({
+                    type: 'player_damaged',
+                    playerId: dp.id,
+                    lives: dp.lives,
+                    nickname: dp.nickname
+                });
+            });
+        }, 2000);
     }
 
     function handleChatMessage(ws, message, playerId, currentRoom) {

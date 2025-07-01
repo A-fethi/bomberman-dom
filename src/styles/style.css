@@ -10,6 +10,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
@@ -58,6 +64,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .game-header {
@@ -119,6 +126,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    overflow: hidden;
 }
 
 .game-board {
