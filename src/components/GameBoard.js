@@ -65,7 +65,7 @@ export function GameBoard() {
                         // Bomb animation
                         let bombNode = null;
                         if (isBombAt(x, y)) {
-                            bombNode = Vnode('div', { class: 'Bomb' });
+                            bombNode = Vnode('img', { class: 'Bomb', src: './src/assets/bomb.png', alt: 'Bomb' });
                         }
                         // Explosion animation
                         let explosionNode = null;
