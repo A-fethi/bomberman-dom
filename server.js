@@ -42,6 +42,8 @@ class GameRoom {
         this.countdownTimer = null;
         this.waitingTimerInterval = null;
         this.waitingStartTime = null;
+        // Chat history 
+        this.chatHistory = [];
     }
 
     addPlayer(playerId, playerData) {
@@ -295,7 +297,8 @@ class GameRoom {
             gameMap: this.gameMap,
             winner: this.winner,
             maxPlayers: GAME_CONFIG.maxPlayers,
-            minPlayers: GAME_CONFIG.minPlayers
+            minPlayers: GAME_CONFIG.minPlayers,
+            chatHistory: this.chatHistory
         };
     }
 
@@ -797,6 +800,12 @@ wss.on('connection', (ws, req) => {
             message: text.trim(),
             timestamp: new Date().toLocaleTimeString()
         };
+
+        // Add to chat history (keep last 50)
+        currentRoom.chatHistory.push(chatMessage);
+        if (currentRoom.chatHistory.length > 50) {
+            currentRoom.chatHistory = currentRoom.chatHistory.slice(-50);
+        }
 
         // Broadcast to other players (exclude sender)
         currentRoom.broadcast({

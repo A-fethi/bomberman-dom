@@ -66,7 +66,8 @@ class WebSocketManager {
                         import('./GameApp.js').then(({ updateGameState }) => {
                             updateGameState({
                                 currentScreen: 'waiting',
-                                nicknameError: ''
+                                nicknameError: '',
+                                chatMessages: message.data.chatHistory || []
                             });
                         });
                         break;
