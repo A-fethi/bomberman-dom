@@ -63,6 +63,12 @@ class WebSocketManager {
                     case 'room_joined':
                         console.log('📨 Client: Room joined with', message.data.players.length, 'players');
                         this.handleRoomJoined(message.data);
+                        import('./GameApp.js').then(({ updateGameState }) => {
+                            updateGameState({
+                                currentScreen: 'waiting',
+                                nicknameError: ''
+                            });
+                        });
                         break;
                         
                     case 'player_joined':
@@ -170,6 +176,12 @@ class WebSocketManager {
                         
                     case 'error':
                         console.error('❌ Client: Server error:', message.message);
+                        import('./GameApp.js').then(({ updateGameState }) => {
+                            updateGameState({
+                                currentScreen: 'nickname',
+                                nicknameError: message.message
+                            });
+                        });
                         break;
                         
                     case 'explosion':

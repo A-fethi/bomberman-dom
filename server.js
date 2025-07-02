@@ -48,7 +48,12 @@ class GameRoom {
         if (this.players.size >= GAME_CONFIG.maxPlayers) {
             return { success: false, error: 'Room is full' };
         }
-
+        // Enforce unique nickname in the room
+        for (const player of this.players.values()) {
+            if (player.nickname && player.nickname.toLowerCase() === playerData.nickname.toLowerCase()) {
+                return { success: false, error: 'Nickname already taken in this room' };
+            }
+        }
         let initialDirection = 'right'
         const spawnPosition = this.getSpawnPosition(this.players.size);
         

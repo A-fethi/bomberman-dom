@@ -35,7 +35,6 @@ export function NicknameEntry() {
         console.log('✅ NicknameEntry: Valid nickname, updating state...');
         updateGameState({
             nickname: trimmedNickname,
-            currentScreen: 'waiting',
             nicknameInput: '',
             nicknameError: ''
         });
