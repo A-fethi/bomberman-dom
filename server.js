@@ -362,7 +362,7 @@ class GameRoom {
 
 // Phase 3: Find or create room for player
 function findOrCreateRoom() {
-    // Find a room with available space
+    // Find a room with available 
     for (const [roomId, room] of rooms) {
         if (room.players.size < GAME_CONFIG.maxPlayers && room.gameStatus === 'waiting') {
             return room;
@@ -534,114 +534,112 @@ wss.on('connection', (ws, req) => {
     }
 
     function handlePlayerMove(ws, message, playerId, currentRoom) {
-        if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
-        console.log(message);
-        const player = currentRoom.players.get(playerId);
-        if (!player || player.eliminated) return; // Prevent eliminated players from moving
-        console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
-        const { direction } = message;
+    if (!currentRoom || currentRoom.gameStatus !== 'playing') return;
+    console.log(message);
 
-        // Calculate movement distance based on speed power-up
-        const speed = player.speed || 1;
-        const moveDistance = Math.floor(speed); // Integer movement for grid-based system
+    const player = currentRoom.players.get(playerId);
+    if (!player || player.eliminated) return; // Prevent eliminated players from moving
+    console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
 
-        // Phase 3: Enhanced movement with speed power-up support
-        const newPosition = { ...player.position };
+    const { direction } = message;
 
-        switch (direction) {
-            case 'up':
-                newPosition.y = Math.max(1, newPosition.y - moveDistance);
-                break;
-            case 'down':
-                newPosition.y = Math.min(11, newPosition.y + moveDistance);
-                break;
-            case 'left':
-                newPosition.x = Math.max(1, newPosition.x - moveDistance);
-                player.direction = 'left';
-                break;
-            case 'right':
-                newPosition.x = Math.min(13, newPosition.x + moveDistance);
-                player.direction = 'right';
-                break;
-        }
+    // Always move exactly 1 cell per input (disable multi-cell movement)
+    const newPosition = { ...player.position };
 
-        // Check if position is valid (not a wall) and handle multi-cell movement
-        if (isValidPosition(newPosition, currentRoom.gameMap)) {
-            // For multi-cell movement, check all cells in the path
-            const pathValid = isPathValid(player.position, newPosition, currentRoom.gameMap);
-            if (!pathValid) {
-                console.log(`🚫 ${player.nickname}: Invalid path for speed ${speed} movement`);
-                return;
-            }
-
-            // Player collision check: prevent moving into a cell occupied by another player
-            const isOccupied = Array.from(currentRoom.players.values()).some(
-                p => p.id !== playerId && !p.eliminated && p.position.x === newPosition.x && p.position.y === newPosition.y
-            );
-            if (isOccupied) {
-                // Cell is occupied by another player, do not move
-                return;
-            }
-
-            // Check for power-up collection
-            const cell = currentRoom.gameMap[newPosition.y][newPosition.x];
-            if (cell.type === 'powerup') {
-                // Collect power-up
-                const powerType = cell.power;
-                switch (powerType) {
-                    case 'bomb':
-                        if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
-                        player.powerups.bomb = (player.powerups.bomb || 0) + 1;
-                        if (player.powerups.bomb === 1) {
-                            player.bombs = Math.min(player.bombs + 1, 5); // Only increase stat if first powerup
-                        }
-                        console.log(`💣 ${player.nickname} collected bomb power-up. Bombs: ${player.bombs}, Uses: ${player.powerups.bomb}`);
-                        break;
-                    case 'flame':
-                        if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
-                        player.powerups.flame = (player.powerups.flame || 0) + 1;
-                        if (player.powerups.flame === 1) {
-                            player.flameRange = Math.min(player.flameRange + 1, 5);
-                        }
-                        console.log(`🔥 ${player.nickname} collected flame power-up. Range: ${player.flameRange}, Uses: ${player.powerups.flame}`);
-                        break;
-                    case 'speed':
-                        player.speed = Math.min(player.speed + 0.5, 3); // Max speed 3
-                        console.log(`⚡ ${player.nickname} collected speed power-up. Speed: ${player.speed}`);
-                        break;
-                }
-
-                // Remove power-up from map
-                currentRoom.gameMap[newPosition.y][newPosition.x] = { type: 'empty' };
-
-                // Broadcast power-up collection
-                currentRoom.broadcast({
-                    type: 'powerup_collected',
-                    playerId,
-                    position: newPosition,
-                    powerType,
-                    playerStats: {
-                        bombs: player.bombs,
-                        flameRange: player.flameRange,
-                        speed: player.speed,
-                        powerups: player.powerups
-                    }
-                });
-
-                console.log(`🎁 ${player.nickname} collected ${powerType} power-up at`, newPosition);
-            }
-
-            player.position = newPosition;
-            // Only update direction for left/right above
-
-            currentRoom.broadcast({
-                type: 'player_moved',
-                playerId,
-                position: newPosition,
-                direction: player.direction // Always send current direction
-            }, playerId);
-        }
+    switch (direction) {
+        case 'up':
+            newPosition.y = Math.max(1, newPosition.y - 1);
+            break;
+        case 'down':
+            newPosition.y = Math.min(11, newPosition.y + 1);
+            break;
+        case 'left':
+            newPosition.x = Math.max(1, newPosition.x - 1);
+            player.direction = 'left';
+            break;
+        case 'right':
+            newPosition.x = Math.min(13, newPosition.x + 1);
+            player.direction = 'right';
+            break;
+        default:
+            console.log('Invalid direction:', direction);
+            return;
     }
+
+    // Check if the new position is valid (not a wall or block)
+    if (!isValidPosition(newPosition, currentRoom.gameMap)) {
+        console.log(`🚫 ${player.nickname}: Invalid move to (${newPosition.x},${newPosition.y})`);
+        return;
+    }
+
+    // Check if the new position is occupied by another player
+    const isOccupied = Array.from(currentRoom.players.values()).some(
+        p => p.id !== playerId && !p.eliminated && p.position.x === newPosition.x && p.position.y === newPosition.y
+    );
+    if (isOccupied) {
+        // Cell occupied, don't move
+        return;
+    }
+
+    // Check for power-up collection
+    const cell = currentRoom.gameMap[newPosition.y][newPosition.x];
+    if (cell.type === 'powerup') {
+        const powerType = cell.power;
+        switch (powerType) {
+            case 'bomb':
+                if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
+                player.powerups.bomb = (player.powerups.bomb || 0) + 1;
+                if (player.powerups.bomb === 1) {
+                    player.bombs = Math.min(player.bombs + 1, 5);
+                }
+                console.log(`💣 ${player.nickname} collected bomb power-up. Bombs: ${player.bombs}, Uses: ${player.powerups.bomb}`);
+                break;
+            case 'flame':
+                if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
+                player.powerups.flame = (player.powerups.flame || 0) + 1;
+                if (player.powerups.flame === 1) {
+                    player.flameRange = Math.min(player.flameRange + 1, 5);
+                }
+                console.log(`🔥 ${player.nickname} collected flame power-up. Range: ${player.flameRange}, Uses: ${player.powerups.flame}`);
+                break;
+            case 'speed':
+                player.speed = Math.min(player.speed + 0.5, 3);
+                console.log(`⚡ ${player.nickname} collected speed power-up. Speed: ${player.speed}`);
+                break;
+        }
+
+        // Remove power-up from the map
+        currentRoom.gameMap[newPosition.y][newPosition.x] = { type: 'empty' };
+
+        // Broadcast power-up collection to other players
+        currentRoom.broadcast({
+            type: 'powerup_collected',
+            playerId,
+            position: newPosition,
+            powerType,
+            playerStats: {
+                bombs: player.bombs,
+                flameRange: player.flameRange,
+                speed: player.speed,
+                powerups: player.powerups
+            }
+        });
+
+        console.log(`🎁 ${player.nickname} collected ${powerType} power-up at`, newPosition);
+    }
+
+    // Update player position
+    player.position = newPosition;
+
+    // Broadcast player movement to all clients
+    currentRoom.broadcast({
+        type: 'player_moved',
+        playerId,
+        position: newPosition,
+        direction: player.direction
+    }, playerId);
+}
+
 
     function isValidPosition(position, gameMap) {
         // Check if position is within bounds and not a wall or block

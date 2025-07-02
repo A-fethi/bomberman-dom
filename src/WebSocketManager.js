@@ -71,7 +71,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'player_joined':
                         console.log('📨 Client: Player joined:', message.player.nickname);
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
@@ -81,7 +80,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'player_left':
                         console.log('📨 Client: Player left:', message.nickname);
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
@@ -91,14 +89,12 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'countdown_update':
                         console.log('📨 Client: Countdown update:', message.countdown);
                         import('./GameApp.js').then(({ updateGameState }) => {
                             updateGameState({ countdown: message.countdown });
                         });
                         break;
-                        
                     case 'countdown_started':
                         console.log('📨 Client: Countdown started:', message.countdown);
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -108,7 +104,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'countdown_cancelled':
                         console.log('📨 Client: Countdown cancelled:', message.message);
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -118,7 +113,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'waiting_timer_started':
                         console.log('📨 Client: Waiting timer started:', message.waitingTimeLeft);
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -127,7 +121,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'waiting_timer_update':
                         console.log('📨 Client: Waiting timer update:', message.waitingTimeLeft);
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -136,7 +129,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'waiting_timer_stopped':
                         console.log('📨 Client: Waiting timer stopped');
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -145,7 +137,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'game_started':
                         console.log('📨 Client: Game started');
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -156,15 +147,12 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'player_moved':
                         this.handlePlayerMoved(message);
                         break;
-                        
                     case 'bomb_placed':
                         this.handleBombPlaced(message);
                         break;
-                        
                     case 'chat_message':
                         console.log('📨 Client: Chat message from:', message.message.player);
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
@@ -174,7 +162,6 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'error':
                         console.error('❌ Client: Server error:', message.message);
                         import('./GameApp.js').then(({ updateGameState }) => {
@@ -184,18 +171,15 @@ class WebSocketManager {
                             });
                         });
                         break;
-                        
                     case 'explosion':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
                             const explosions = (gameState.explosions || []);
-                            // Update the map: turn affected cells to empty (unless already a power-up)
                             let newMap = gameState.gameMap;
                             if (gameState.gameMap && message.affectedCells) {
                                 newMap = gameState.gameMap.map((row, y) =>
                                     row.map((cell, x) => {
                                         if (message.affectedCells.some(c => c.x === x && c.y === y)) {
-                                            // If not already a power-up, set to empty
                                             if (cell.type !== 'powerup') {
                                                 return { type: 'empty' };
                                             }
@@ -204,22 +188,16 @@ class WebSocketManager {
                                     })
                                 );
                             }
-                            
-                            // Add new explosion with auto-cleanup
                             const newExplosion = { 
                                 position: message.position, 
                                 affectedCells: message.affectedCells, 
                                 timestamp: Date.now() 
                             };
-                            
                             updateGameState({
                                 explosions: [...explosions, newExplosion],
                                 gameMap: newMap
                             });
-                            
                             console.log(`💥 Added explosion at`, message.position, `Total explosions:`, explosions.length + 1);
-                            
-                            // Remove explosion after animation duration (1.2 seconds to match CSS)
                             setTimeout(() => {
                                 const currentState = getGameState();
                                 const updatedExplosions = (currentState.explosions || []).filter(exp => 
@@ -232,12 +210,10 @@ class WebSocketManager {
                             }, 1200);
                         });
                         break;
-                        
                     case 'powerup_spawned':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
                             if (!gameState.gameMap) return;
-                            // Overwrite the cell with the power-up
                             const newMap = gameState.gameMap.map((row, y) =>
                                 row.map((cell, x) =>
                                     (x === message.position.x && y === message.position.y)
@@ -248,7 +224,6 @@ class WebSocketManager {
                             updateGameState({ gameMap: newMap });
                         });
                         break;
-
                     case 'player_damaged':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
@@ -275,18 +250,14 @@ class WebSocketManager {
                             });
                         });
                         break;
-
                     case 'powerup_collected':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
-                            // Update player stats
                             const updatedPlayers = gameState.players.map(player => 
                                 player.id === message.playerId 
                                     ? { ...player, ...message.playerStats }
                                     : player
                             );
-                            
-                            // Update map to remove power-up
                             let newMap = gameState.gameMap;
                             if (gameState.gameMap) {
                                 newMap = gameState.gameMap.map((row, y) =>
@@ -297,8 +268,6 @@ class WebSocketManager {
                                     )
                                 );
                             }
-                            
-                            // Show power-up notification if it's the local player
                             const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
                             let powerupNotification = null;
                             if (localPlayer && localPlayer.id === message.playerId) {
@@ -316,39 +285,30 @@ class WebSocketManager {
                                     emoji: powerupEmojis[message.powerType] || '🎁',
                                     text: `${powerupNames[message.powerType] || message.powerType} +1!`
                                 };
-                                
-                                // Auto-hide notification after 3 seconds
                                 setTimeout(() => {
                                     updateGameState({ powerupNotification: null });
                                 }, 3000);
                             }
-                            
                             updateGameState({
                                 players: updatedPlayers,
                                 gameMap: newMap,
                                 powerupNotification
                             });
-                            
                             console.log(`🎁 Power-up collected: ${message.powerType} by player ${message.playerId}`);
                         });
                         break;
-
                     case 'bomb_removed':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
-                            // Remove bomb from bombs array
                             const updatedBombs = (gameState.bombs || []).filter(bomb => 
                                 !(bomb.x === message.position.x && bomb.y === message.position.y)
                             );
-                            
                             updateGameState({
                                 bombs: updatedBombs
                             });
-                            
                             console.log(`💥 Bomb removed at position:`, message.position);
                         });
                         break;
-
                     case 'game_ended':
                         import('./GameApp.js').then(({ updateGameState }) => {
                             updateGameState({
@@ -357,15 +317,12 @@ class WebSocketManager {
                                 winner: message.winner,
                                 players: message.players
                             });
-                            
                             console.log(`🏁 Game ended! Winner:`, message.winner);
                         });
                         break;
-
                     case 'powerup_used':
                         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
                             const gameState = getGameState();
-                            // Update player stats for the player who used a powerup
                             const updatedPlayers = gameState.players.map(player => 
                                 player.id === message.playerId 
                                     ? { ...player, ...message.playerStats }
@@ -388,7 +345,6 @@ class WebSocketManager {
             console.log('🔴 WebSocket connection closed:', event.code, event.reason);
             this.isConnecting = false;
             this.updateConnectionStatus('disconnected');
-            
             if (!event.wasClean) {
                 this.handleConnectionError();
             }
@@ -402,13 +358,11 @@ class WebSocketManager {
 
     updateConnectionStatus(status) {
         this.connectionStatus = status;
-        // Notify any listeners about status change
         this.statusCallbacks.forEach(callback => callback(status));
     }
 
     onConnectionStatusChange(callback) {
         this.statusCallbacks.push(callback);
-        // Immediately call with current status
         callback(this.connectionStatus);
     }
 
@@ -420,7 +374,6 @@ class WebSocketManager {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            
             setTimeout(() => {
                 this.connect();
             }, this.reconnectDelay * this.reconnectAttempts);
@@ -434,7 +387,6 @@ class WebSocketManager {
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {
-            // Queue message for later if not connected
             this.messageQueue.push(message);
             console.log('📤 Message queued, waiting for connection...');
         }
@@ -448,7 +400,6 @@ class WebSocketManager {
     }
 
     handleRoomJoined(roomData) {
-        // Import here to avoid circular dependency
         import('./GameApp.js').then(({ updateGameState }) => {
             console.log('🏠 WebSocketManager: Room joined with', roomData.players.length, 'players');
             updateGameState(roomData);
@@ -463,15 +414,11 @@ class WebSocketManager {
                     ? { ...player, position: message.position, direction: message.direction }
                     : player
             );
-
-            updateGameState({
-                players: updatedPlayers
-            });
+            updateGameState({ players: updatedPlayers });
         });
     }
 
     handleBombPlaced(message) {
-        // Track bombs in game state for animation
         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
             const gameState = getGameState();
             const bombs = (gameState.bombs || []);
@@ -481,7 +428,6 @@ class WebSocketManager {
         });
     }
 
-    // Phase 3: Client action methods
     sendJoinGame(nickname) {
         console.log('📤 Client: Sending join_game for nickname:', nickname);
         this.send({
@@ -491,35 +437,24 @@ class WebSocketManager {
     }
 
     startGame() {
-        this.send({
-            type: 'start_game'
-        });
+        this.send({ type: 'start_game' });
     }
 
     movePlayer(direction) {
-        this.send({
-            type: 'player_move',
-            direction
-        });
+        this.send({ type: 'player_move', direction });
     }
 
     placeBomb() {
-        this.send({
-            type: 'place_bomb'
-        });
+        console.log('📤 aaa Client: Sending place_bomb');
+        this.send({ type: 'place_bomb' });
     }
 
     sendChatMessage(text) {
-        this.send({
-            type: 'chat_message',
-            text
-        });
+        this.send({ type: 'chat_message', text });
     }
 
     leaveGame() {
-        this.send({
-            type: 'leave_game'
-        });
+        this.send({ type: 'leave_game' });
     }
 
     disconnect() {
@@ -529,7 +464,6 @@ class WebSocketManager {
     }
 
     getCurrentPlayerId() {
-        // Import here to avoid circular dependency
         return new Promise((resolve) => {
             import('./GameApp.js').then(({ getGameState }) => {
                 const gameState = getGameState();
@@ -544,11 +478,11 @@ class WebSocketManager {
     }
 }
 
-// Phase 3: Create and export singleton instance
+// Create and export singleton instance
 console.log('🔌 WebSocketManager: Creating singleton instance...');
 export const webSocketManager = new WebSocketManager();
 
-// Phase 3: Auto-connect when module loads
+// Auto-connect when module loads
 console.log('🔌 WebSocketManager: Auto-connecting...');
 webSocketManager.connect();
-console.log('✅ WebSocketManager: Module initialization completed'); 
+console.log('✅ WebSocketManager: Module initialization completed');

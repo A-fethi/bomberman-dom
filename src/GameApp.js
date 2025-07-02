@@ -4,7 +4,7 @@ import { Vnode, render } from '../node_modules/all4one-js/index.js';
 console.log('✅ GameApp: Vnode, render imports successful');
 import { createState, effect } from '../node_modules/all4one-js/index.js';
 console.log('✅ GameApp: createState, effect imports successful');
-import { webSocketManager } from './WebSocketManager.js';
+import { webSocketManager } from './WebSocketManager.js'; // Use the singleton WebSocketManager
 console.log('✅ GameApp: webSocketManager import successful');
 import { gameLoop } from './GameLoop.js';
 console.log('✅ GameApp: gameLoop import successful');
@@ -117,47 +117,80 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-function setupMovementControls() {
-    window.addEventListener('keyup', (e) => {
-        const gameState = getGameState();
-        if (gameState.currentScreen !== 'game') return;
+let moveInterval = null;
+let currentDirection = null;
+const keyToDirection = {
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+};
 
-       
-        if (e.key === ' ') {
-            webSocketManager.placeBomb();
-            e.preventDefault();
-            return;
-        }
+function startMoving(direction, speed) {
+    if (moveInterval) return; // already moving
 
-        let direction = null;
-        switch (e.key) {
-            case 'ArrowUp':
-            case 'w':
-            case 'W':
-                direction = 'up';
-                break;
-            case 'ArrowDown':
-            case 's':
-            case 'S':
-                direction = 'down';
-                break;
-            case 'ArrowLeft':
-            case 'a':
-            case 'A':
-                direction = 'left';
-                break;
-            case 'ArrowRight':
-            case 'd':
-            case 'D':
-                direction = 'right';
-                break;
-            default:
-                return;
-        }
-        e.preventDefault();
-        webSocketManager.movePlayer(direction);
-    });
+    sendMove(direction); // instant first move
+
+    // movement delay in ms: the higher the speed, the faster the player
+    const baseDelay = 250;
+    const speedFactor = 40;
+    const delay = Math.max(60, baseDelay - speed * speedFactor); // delay based on speed
+
+    currentDirection = direction;
+
+    moveInterval = setInterval(() => {
+        sendMove(direction);
+    }, delay);
 }
+
+function stopMoving() {
+    if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null;
+        currentDirection = null;
+    }
+}
+
+function sendMove(direction) {
+    const gameState = getGameState();
+    if (gameState.gameStatus !== 'playing') return;
+
+    const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
+    if (!localPlayer || localPlayer.eliminated) return;
+
+    // Use the webSocketManager to send the move
+    webSocketManager.movePlayer(direction);
+}
+
+// Movement key handlers
+window.addEventListener('keydown', (e) => {
+    if (!keyToDirection[e.key]) return;
+
+    const gameState = getGameState();
+    const direction = keyToDirection[e.key];
+    const player = gameState.players.find(p => p.nickname === gameState.nickname);
+
+    if (!player) return;
+
+    if (direction !== currentDirection) {
+        stopMoving();
+        startMoving(direction, player.speed || 1);
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (keyToDirection[e.key] === currentDirection) {
+        stopMoving();
+    }
+});
+
+// Bomb placement key handler - Spacebar triggers bomb placement
+window.addEventListener('keydown', (e) => {
+    if (e.key === ' ') { // Spacebar
+        e.preventDefault(); // prevent page scroll
+        handlePlaceBomb();
+    }
+});
 
 // Phase 2: Main application component
 export function GameApp() {
@@ -245,20 +278,18 @@ export function GameApp() {
     return result;
 }
 
-setupMovementControls();
-
 // Phase 2: Event handlers
-function handleNicknameSubmit(nickname) {
+export function handleNicknameSubmit(nickname) {
     setGameState({ 
         nickname,
         currentScreen: 'waiting'
     });
     
     // Phase 3: Connect to WebSocket and join game
-    webSocketManager.joinGame(nickname);
+    webSocketManager.sendJoinGame(nickname);
 }
 
-function handleStartGame() {
+export function handleStartGame() {
     webSocketManager.startGame();
     setGameState({
         bombs: [],
@@ -266,7 +297,7 @@ function handleStartGame() {
     });
 }
 
-function handleLeaveRoom() {
+export function handleLeaveRoom() {
     webSocketManager.leaveGame();
     setGameState({
         currentScreen: 'nickname',
@@ -279,15 +310,16 @@ function handleLeaveRoom() {
     });
 }
 
-function handlePlayerMove(direction) {
+export function handlePlayerMove(direction) {
     webSocketManager.movePlayer(direction);
 }
 
-function handlePlaceBomb() {
+export function handlePlaceBomb() {
+    console.log('🚩 GameApp: Placing bomb...');
     webSocketManager.placeBomb();
 }
 
-function handleSendChatMessage(text) {
+export function handleSendChatMessage(text) {
     const newMessage = {
         id: Date.now(),
         text,
@@ -303,7 +335,7 @@ function handleSendChatMessage(text) {
     webSocketManager.sendChatMessage(text);
 }
 
-function handlePlayAgain() {
+export function handlePlayAgain() {
     setGameState({
         currentScreen: 'waiting',
         gameStatus: 'waiting',
@@ -315,7 +347,7 @@ function handlePlayAgain() {
     });
 }
 
-function handleBackToMenu() {
+export function handleBackToMenu() {
     setGameState({
         currentScreen: 'nickname',
         roomId: null,
@@ -329,7 +361,7 @@ function handleBackToMenu() {
     });
 }
 
-// Phase 2: Initialize app
+// Phase 2: Initialize app (uncomment to enable)
 // document.addEventListener('DOMContentLoaded', () => {
 //     console.log('🎮 Bomberman DOM Game - Phase 2 Initialized');
 //     render(() => GameApp(), document.getElementById('app'));
