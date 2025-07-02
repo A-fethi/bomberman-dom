@@ -361,7 +361,21 @@ class WebSocketManager {
                             console.log(`🏁 Game ended! Winner:`, message.winner);
                         });
                         break;
-                        
+
+                    case 'powerup_used':
+                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+                            const gameState = getGameState();
+                            // Update player stats for the player who used a powerup
+                            const updatedPlayers = gameState.players.map(player => 
+                                player.id === message.playerId 
+                                    ? { ...player, ...message.playerStats }
+                                    : player
+                            );
+                            updateGameState({
+                                players: updatedPlayers
+                            });
+                        });
+                        break;
                     default:
                         console.warn('⚠️ Client: Unknown message type:', message.type);
                 }

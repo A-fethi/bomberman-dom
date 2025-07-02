@@ -145,9 +145,9 @@ export function GameBoard() {
                     const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
                     if (!localPlayer) return Vnode('div', {}, 'None');
                     const powerups = [];
-                    if (localPlayer.bombs > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `💣 x${localPlayer.bombs}`));
-                    if (localPlayer.flameRange > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🔥 x${localPlayer.flameRange}`));
-                    if (localPlayer.speed > 1) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🏃 x${localPlayer.speed}`));
+                    if (localPlayer.powerups && localPlayer.powerups.bomb > 0) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `💣 x${localPlayer.powerups.bomb}`));
+                    if (localPlayer.powerups && localPlayer.powerups.flame > 0) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🔥 x${localPlayer.powerups.flame}`));
+                    if (localPlayer.powerups && localPlayer.powerups.speed > 0) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `🏃 x${localPlayer.powerups.speed}`));
                     if (localPlayer.lives > 3) powerups.push(Vnode('span', { class: 'sidebar-powerup' }, `❤️ x${localPlayer.lives}`));
                     return powerups.length ? powerups : Vnode('div', {}, 'None');
                 })()

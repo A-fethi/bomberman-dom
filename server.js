@@ -58,7 +58,7 @@ class GameRoom {
         }
         let initialDirection = 'right'
         const spawnPosition = this.getSpawnPosition(this.players.size);
-        
+
         if ((spawnPosition.x === 13 && spawnPosition.y === 1) || (spawnPosition.x === 13 && spawnPosition.y === 11)) {
             initialDirection = 'left'
         }
@@ -72,7 +72,10 @@ class GameRoom {
             bombs: 1,
             flameRange: 1,
             speed: 1,
-            direction: initialDirection
+            direction: initialDirection,
+            powerups: { bomb: 0, flame: 0, speed: 0 }, // Track powerup counts
+            activeBombs: 0, // Track bombs currently placed
+            speedTimeout: null // Track speed powerup timer
         });
 
         // Check and start timers after adding player
@@ -307,11 +310,11 @@ class GameRoom {
 
         // Count active players (not eliminated)
         const activePlayers = Array.from(this.players.values()).filter(p => !p.eliminated);
-        
+
         if (activePlayers.length <= 1) {
             // Game ends - determine winner
             this.gameStatus = 'finished';
-            
+
             if (activePlayers.length === 1) {
                 // Single winner
                 this.winner = activePlayers[0].nickname;
@@ -537,28 +540,28 @@ wss.on('connection', (ws, req) => {
         if (!player || player.eliminated) return; // Prevent eliminated players from moving
         console.log(`🕹️ Player ${playerId} requested move:`, message.direction);
         const { direction } = message;
-        
+
         // Calculate movement distance based on speed power-up
         const speed = player.speed || 1;
         const moveDistance = Math.floor(speed); // Integer movement for grid-based system
-        
+
         // Phase 3: Enhanced movement with speed power-up support
         const newPosition = { ...player.position };
 
         switch (direction) {
-            case 'up': 
-                newPosition.y = Math.max(1, newPosition.y - moveDistance); 
+            case 'up':
+                newPosition.y = Math.max(1, newPosition.y - moveDistance);
                 break;
-            case 'down': 
-                newPosition.y = Math.min(11, newPosition.y + moveDistance); 
+            case 'down':
+                newPosition.y = Math.min(11, newPosition.y + moveDistance);
                 break;
-            case 'left': 
-                newPosition.x = Math.max(1, newPosition.x - moveDistance); 
-                player.direction = 'left'; 
+            case 'left':
+                newPosition.x = Math.max(1, newPosition.x - moveDistance);
+                player.direction = 'left';
                 break;
-            case 'right': 
-                newPosition.x = Math.min(13, newPosition.x + moveDistance); 
-                player.direction = 'right'; 
+            case 'right':
+                newPosition.x = Math.min(13, newPosition.x + moveDistance);
+                player.direction = 'right';
                 break;
         }
 
@@ -570,7 +573,7 @@ wss.on('connection', (ws, req) => {
                 console.log(`🚫 ${player.nickname}: Invalid path for speed ${speed} movement`);
                 return;
             }
-            
+
             // Player collision check: prevent moving into a cell occupied by another player
             const isOccupied = Array.from(currentRoom.players.values()).some(
                 p => p.id !== playerId && !p.eliminated && p.position.x === newPosition.x && p.position.y === newPosition.y
@@ -587,12 +590,20 @@ wss.on('connection', (ws, req) => {
                 const powerType = cell.power;
                 switch (powerType) {
                     case 'bomb':
-                        player.bombs = Math.min(player.bombs + 1, 5); // Max 5 bombs
-                        console.log(`💣 ${player.nickname} collected bomb power-up. Bombs: ${player.bombs}`);
+                        if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
+                        player.powerups.bomb = (player.powerups.bomb || 0) + 1;
+                        if (player.powerups.bomb === 1) {
+                            player.bombs = Math.min(player.bombs + 1, 5); // Only increase stat if first powerup
+                        }
+                        console.log(`💣 ${player.nickname} collected bomb power-up. Bombs: ${player.bombs}, Uses: ${player.powerups.bomb}`);
                         break;
                     case 'flame':
-                        player.flameRange = Math.min(player.flameRange + 1, 5); // Max flame range 5
-                        console.log(`🔥 ${player.nickname} collected flame power-up. Range: ${player.flameRange}`);
+                        if (!player.powerups) player.powerups = { bomb: 0, flame: 0, speed: 0 };
+                        player.powerups.flame = (player.powerups.flame || 0) + 1;
+                        if (player.powerups.flame === 1) {
+                            player.flameRange = Math.min(player.flameRange + 1, 5);
+                        }
+                        console.log(`🔥 ${player.nickname} collected flame power-up. Range: ${player.flameRange}, Uses: ${player.powerups.flame}`);
                         break;
                     case 'speed':
                         player.speed = Math.min(player.speed + 0.5, 3); // Max speed 3
@@ -612,7 +623,8 @@ wss.on('connection', (ws, req) => {
                     playerStats: {
                         bombs: player.bombs,
                         flameRange: player.flameRange,
-                        speed: player.speed
+                        speed: player.speed,
+                        powerups: player.powerups
                     }
                 });
 
@@ -644,26 +656,26 @@ wss.on('connection', (ws, req) => {
         // Check if all cells in the movement path are valid
         const dx = endPos.x - startPos.x;
         const dy = endPos.y - startPos.y;
-        
+
         // Determine movement direction
         const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
         const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
-        
+
         // Check each cell in the path
         let currentX = startPos.x;
         let currentY = startPos.y;
-        
+
         while (currentX !== endPos.x || currentY !== endPos.y) {
             // Move one step towards the target
             if (currentX !== endPos.x) currentX += stepX;
             if (currentY !== endPos.y) currentY += stepY;
-            
+
             // Check if this cell is valid
             if (!isValidPosition({ x: currentX, y: currentY }, gameMap)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -672,6 +684,33 @@ wss.on('connection', (ws, req) => {
 
         const player = currentRoom.players.get(playerId);
         if (!player || player.eliminated) return; // Prevent eliminated players from placing bombs
+
+        // Only allow bomb placement if player has available slots
+        const maxBombs = 1 + (player.powerups && player.powerups.bomb ? player.powerups.bomb : 0);
+        if (player.activeBombs >= maxBombs) {
+            // Optionally, send a message to the player that they can't plant more bombs
+            return;
+        }
+        player.activeBombs++;
+
+        // Before placing a bomb, handle bomb powerup decrement
+        if (player.bombs > 1 && player.powerups && player.powerups.bomb > 0) {
+            player.powerups.bomb--;
+            if (player.powerups.bomb === 0) {
+                player.bombs = 1;
+            }
+            // Broadcast updated stats
+            currentRoom.broadcast({
+                type: 'powerup_used',
+                playerId,
+                playerStats: {
+                    bombs: player.bombs,
+                    flameRange: player.flameRange,
+                    speed: player.speed,
+                    powerups: player.powerups
+                }
+            });
+        }
 
         // Store the bomb's position at placement time
         const bombPosition = { x: player.position.x, y: player.position.y };
@@ -781,8 +820,29 @@ wss.on('connection', (ws, req) => {
                 type: 'bomb_removed',
                 position: bombPosition
             });
+            // Decrement activeBombs for the player
+            if (player.activeBombs > 0) player.activeBombs--;
 
             console.log(`💥 Bomb exploded and removed at`, bombPosition);
+
+            // After explosion, handle flame powerup decrement if extra range was used
+            if (player.flameRange > 1 && player.powerups && player.powerups.flame > 0) {
+                player.powerups.flame--;
+                if (player.powerups.flame === 0) {
+                    player.flameRange = 1;
+                }
+                // Broadcast updated stats
+                currentRoom.broadcast({
+                    type: 'powerup_used',
+                    playerId,
+                    playerStats: {
+                        bombs: player.bombs,
+                        flameRange: player.flameRange,
+                        speed: player.speed,
+                        powerups: player.powerups
+                    }
+                });
+            }
         }, 2000);
     }
 
