@@ -44,6 +44,7 @@ class GameRoom {
         this.waitingStartTime = null;
         // Chat history 
         this.chatHistory = [];
+        this.activeExplosions = [];
     }
 
     addPlayer(playerId, playerData) {
@@ -564,6 +565,9 @@ wss.on('connection', (ws, req) => {
                 player.direction = 'right';
                 break;
         }
+        
+        const now = Date.now();
+        currentRoom.activeExplosions = (currentRoom.activeExplosions || []).filter(exp => now - exp.timestamp < 1200);
 
         // Check if position is valid (not a wall) and handle multi-cell movement
         if (isValidPosition(newPosition, currentRoom.gameMap)) {
@@ -580,6 +584,39 @@ wss.on('connection', (ws, req) => {
             );
             if (isOccupied) {
                 // Cell is occupied by another player, do not move
+                return;
+            }
+
+            const inExplosion = (currentRoom.activeExplosions || []).some(exp =>
+                exp.affectedCells.some(cell => cell.x === newPosition.x && cell.y === newPosition.y)
+            );
+            if (inExplosion) {
+                player.lives = Math.max(0, (player.lives || 1) - 1);
+                if (player.lives === 0) {
+                    player.eliminated = true;
+                    currentRoom.broadcast({
+                        type: 'player_eliminated',
+                        playerId,
+                        nickname: player.nickname
+                    });
+                } else {
+                    const playerIndex = Array.from(currentRoom.players.keys()).indexOf(playerId);
+                    const spawnPos = currentRoom.getSpawnPosition(playerIndex);
+                    player.position = { ...spawnPos };
+                    currentRoom.broadcast({
+                        type: 'player_moved',
+                        playerId,
+                        position: player.position,
+                        direction: player.direction
+                    });
+                    currentRoom.broadcast({
+                        type: 'player_damaged',
+                        playerId,
+                        lives: player.lives,
+                        nickname: player.nickname
+                    });
+                }
+                currentRoom.checkGameEnd();
                 return;
             }
 
@@ -762,6 +799,16 @@ wss.on('connection', (ws, req) => {
                     }
                 }
             });
+
+            // --- Add explosion to activeExplosions for collision detection ---
+            if (!currentRoom.activeExplosions) currentRoom.activeExplosions = [];
+            const explosionObj = { affectedCells, timestamp: Date.now() };
+            currentRoom.activeExplosions.push(explosionObj);
+            setTimeout(() => {
+                // Remove this explosion after 1.2s
+                currentRoom.activeExplosions = (currentRoom.activeExplosions || []).filter(exp => exp !== explosionObj);
+            }, 1200);
+            // --- End explosion tracking ---
 
             // Damage players in affected cells
             let damagedPlayers = [];
