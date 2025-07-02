@@ -191,10 +191,32 @@ class WebSocketManager {
                                     })
                                 );
                             }
+                            
+                            // Add new explosion with auto-cleanup
+                            const newExplosion = { 
+                                position: message.position, 
+                                affectedCells: message.affectedCells, 
+                                timestamp: Date.now() 
+                            };
+                            
                             updateGameState({
-                                explosions: [...explosions, { position: message.position, affectedCells: message.affectedCells, timestamp: Date.now() }],
+                                explosions: [...explosions, newExplosion],
                                 gameMap: newMap
                             });
+                            
+                            console.log(`💥 Added explosion at`, message.position, `Total explosions:`, explosions.length + 1);
+                            
+                            // Remove explosion after animation duration (1.2 seconds to match CSS)
+                            setTimeout(() => {
+                                const currentState = getGameState();
+                                const updatedExplosions = (currentState.explosions || []).filter(exp => 
+                                    exp.timestamp !== newExplosion.timestamp
+                                );
+                                updateGameState({
+                                    explosions: updatedExplosions
+                                });
+                                console.log(`🧹 Cleaned up explosion at`, message.position, `Remaining explosions:`, updatedExplosions.length);
+                            }, 1200);
                         });
                         break;
                         
@@ -311,6 +333,19 @@ class WebSocketManager {
                             });
                             
                             console.log(`💥 Bomb removed at position:`, message.position);
+                        });
+                        break;
+
+                    case 'game_ended':
+                        import('./GameApp.js').then(({ updateGameState }) => {
+                            updateGameState({
+                                currentScreen: 'gameOver',
+                                gameStatus: 'finished',
+                                winner: message.winner,
+                                players: message.players
+                            });
+                            
+                            console.log(`🏁 Game ended! Winner:`, message.winner);
                         });
                         break;
                         

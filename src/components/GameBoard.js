@@ -10,7 +10,13 @@ export function GameBoard() {
     // Helper: check if a bomb is at (x, y)
     const isBombAt = (x, y) => bombs.some(b => b.x === x && b.y === y);
     // Helper: check if an explosion is at (x, y)
-    const isExplosionAt = (x, y) => explosions.some(e => e.affectedCells.some(cell => cell.x === x && cell.y === y));
+    const isExplosionAt = (x, y) => {
+        const hasExplosion = explosions.some(e => e.affectedCells.some(cell => cell.x === x && cell.y === y));
+        if (hasExplosion && explosions.length > 0) {
+            console.log(`💥 Rendering explosion at (${x}, ${y}), total explosions:`, explosions.length);
+        }
+        return hasExplosion;
+    };
 
     // Render the game map if available
     const renderMap = () => {

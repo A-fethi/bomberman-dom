@@ -89,6 +89,23 @@ gameLoop.addUpdateCallback(() => {
     });
 });
 
+// Add explosion cleanup callback
+gameLoop.addUpdateCallback(() => {
+    const gameState = getGameState();
+    if (gameState.explosions && gameState.explosions.length > 0) {
+        const now = Date.now();
+        const updatedExplosions = gameState.explosions.filter(exp => 
+            now - exp.timestamp < 2000 // Keep explosions for max 2 seconds
+        );
+        
+        if (updatedExplosions.length !== gameState.explosions.length) {
+            updateGameState({
+                explosions: updatedExplosions
+            });
+        }
+    }
+});
+
 // Performance stats toggle (Ctrl+P)
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'p') {

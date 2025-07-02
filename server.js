@@ -294,6 +294,40 @@ class GameRoom {
         };
     }
 
+    checkGameEnd() {
+        if (this.gameStatus !== 'playing') return;
+
+        // Count active players (not eliminated)
+        const activePlayers = Array.from(this.players.values()).filter(p => !p.eliminated);
+        
+        if (activePlayers.length <= 1) {
+            // Game ends - determine winner
+            this.gameStatus = 'finished';
+            
+            if (activePlayers.length === 1) {
+                // Single winner
+                this.winner = activePlayers[0].nickname;
+                console.log(`🏆 Game ended! Winner: ${this.winner}`);
+            } else {
+                // No winner (all eliminated)
+                this.winner = null;
+                console.log(`🏁 Game ended! No winner - all players eliminated`);
+            }
+
+            // Broadcast game end
+            this.broadcast({
+                type: 'game_ended',
+                winner: this.winner,
+                players: Array.from(this.players.values()).map(player => ({
+                    id: player.id,
+                    nickname: player.nickname,
+                    lives: player.lives,
+                    eliminated: player.eliminated
+                }))
+            });
+        }
+    }
+
     broadcast(message, excludePlayerId = null) {
         console.log('📤 Server: Broadcasting message to', this.players.size, 'players, excluding:', excludePlayerId);
         this.players.forEach((player, playerId) => {
@@ -713,6 +747,9 @@ wss.on('connection', (ws, req) => {
                     }
                 }
             });
+
+            // Check for game end conditions after player damage
+            currentRoom.checkGameEnd();
 
             // Broadcast explosion
             currentRoom.broadcast({
