@@ -730,25 +730,6 @@ wss.on('connection', (ws, req) => {
         }
         player.activeBombs++;
 
-        // Before placing a bomb, handle bomb powerup decrement
-        if (player.bombs > 1 && player.powerups && player.powerups.bomb > 0) {
-            player.powerups.bomb--;
-            if (player.powerups.bomb === 0) {
-                player.bombs = 1;
-            }
-            // Broadcast updated stats
-            currentRoom.broadcast({
-                type: 'powerup_used',
-                playerId,
-                playerStats: {
-                    bombs: player.bombs,
-                    flameRange: player.flameRange,
-                    speed: player.speed,
-                    powerups: player.powerups
-                }
-            });
-        }
-
         // Store the bomb's position at placement time
         const bombPosition = { x: player.position.x, y: player.position.y };
 
@@ -870,15 +851,34 @@ wss.on('connection', (ws, req) => {
             // Decrement activeBombs for the player
             if (player.activeBombs > 0) player.activeBombs--;
 
-            console.log(`💥 Bomb exploded and removed at`, bombPosition);
+            if (
+                player.bombs > 1 &&
+                player.powerups && player.powerups.bomb > 0 &&
+                player.activeBombs <= 1
+            ) {
+                player.powerups.bomb--;
+                if (player.powerups.bomb === 0) {
+                    player.bombs = 1;
+                }
 
-            // After explosion, handle flame powerup decrement if extra range was used
+                currentRoom.broadcast({
+                    type: 'powerup_used',
+                    playerId,
+                    playerStats: {
+                        bombs: player.bombs,
+                        flameRange: player.flameRange,
+                        speed: player.speed,
+                        powerups: player.powerups
+                    }
+                });
+            }
+
             if (player.flameRange > 1 && player.powerups && player.powerups.flame > 0) {
                 player.powerups.flame--;
                 if (player.powerups.flame === 0) {
                     player.flameRange = 1;
                 }
-                // Broadcast updated stats
+                
                 currentRoom.broadcast({
                     type: 'powerup_used',
                     playerId,
