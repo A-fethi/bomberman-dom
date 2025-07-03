@@ -1,5 +1,6 @@
 // Phase 3: WebSocket Manager for client-side connection handling
 console.log('🔌 WebSocketManager: Module loading...');
+
 class WebSocketManager {
     constructor() {
         console.log('🔌 WebSocketManager: Constructor called...');
@@ -11,13 +12,12 @@ class WebSocketManager {
         console.log('🔌 WebSocketManager: Server URL:', this.serverUrl);
         this.messageQueue = [];
         this.isConnecting = false;
-        this.connectionStatus = 'disconnected'; // 'connecting', 'connected', 'disconnected'
+        this.connectionStatus = 'disconnected';
         this.statusCallbacks = [];
         console.log('✅ WebSocketManager: Constructor completed');
     }
 
     getServerUrl() {
-        // Auto-detect server URL based on current location
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
         const port = window.location.port || (protocol === 'wss:' ? '443' : '8000');
@@ -25,29 +25,27 @@ class WebSocketManager {
     }
 
     connect() {
-        console.log('🔌 WebSocketManager: Connect method called...');
         if (this.isConnecting || this.ws?.readyState === WebSocket.OPEN) {
-            console.log('🔌 WebSocketManager: Already connecting or connected, skipping...');
+            console.log('🔌 WebSocketManager: Already connecting or connected');
             return;
         }
 
         this.isConnecting = true;
         this.updateConnectionStatus('connecting');
-        console.log('🔌 WebSocketManager: Attempting to connect to:', this.serverUrl);
+        console.log('🔌 WebSocketManager: Connecting to:', this.serverUrl);
 
         try {
             this.ws = new WebSocket(this.serverUrl);
-            console.log('🔌 WebSocketManager: WebSocket instance created');
             this.setupEventHandlers();
         } catch (error) {
-            console.error('❌ WebSocketManager: Failed to create WebSocket connection:', error);
+            console.error('❌ WebSocketManager: Connection failed:', error);
             this.handleConnectionError();
         }
     }
 
     setupEventHandlers() {
         this.ws.onopen = () => {
-            console.log('🟢 WebSocket connected to server');
+            console.log('🟢 WebSocket connected');
             this.isConnecting = false;
             this.reconnectAttempts = 0;
             this.updateConnectionStatus('connected');
@@ -57,95 +55,38 @@ class WebSocketManager {
         this.ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
-                console.log('📨 Client: Received message:', message.type, message);
+                console.log('📨 Client: Received message:', message.type);
                 
                 switch (message.type) {
                     case 'room_joined':
-                        console.log('📨 Client: Room joined with', message.data.players.length, 'players');
                         this.handleRoomJoined(message.data);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({
-                                currentScreen: 'waiting',
-                                nicknameError: '',
-                                chatMessages: message.data.chatHistory || []
-                            });
-                        });
                         break;
                     case 'player_joined':
-                        console.log('📨 Client: Player joined:', message.player.nickname);
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            updateGameState({
-                                players: [...(gameState.players || []), message.player]
-                            });
-                        });
+                        this.handlePlayerJoined(message);
                         break;
                     case 'player_left':
-                        console.log('📨 Client: Player left:', message.nickname);
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            updateGameState({
-                                players: (gameState.players || []).filter(p => p.id !== message.playerId)
-                            });
-                        });
+                        this.handlePlayerLeft(message);
                         break;
                     case 'countdown_update':
-                        console.log('📨 Client: Countdown update:', message.countdown);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ countdown: message.countdown });
-                        });
+                        this.handleCountdownUpdate(message);
                         break;
                     case 'countdown_started':
-                        console.log('📨 Client: Countdown started:', message.countdown);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                gameStatus: 'starting',
-                                countdown: message.countdown
-                            });
-                        });
+                        this.handleCountdownStarted(message);
                         break;
                     case 'countdown_cancelled':
-                        console.log('📨 Client: Countdown cancelled:', message.message);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                gameStatus: 'waiting',
-                                countdown: null
-                            });
-                        });
+                        this.handleCountdownCancelled(message);
                         break;
                     case 'waiting_timer_started':
-                        console.log('📨 Client: Waiting timer started:', message.waitingTimeLeft);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                waitingTimeLeft: message.waitingTimeLeft
-                            });
-                        });
+                        this.handleWaitingTimerStarted(message);
                         break;
                     case 'waiting_timer_update':
-                        console.log('📨 Client: Waiting timer update:', message.waitingTimeLeft);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                waitingTimeLeft: message.waitingTimeLeft
-                            });
-                        });
+                        this.handleWaitingTimerUpdate(message);
                         break;
                     case 'waiting_timer_stopped':
-                        console.log('📨 Client: Waiting timer stopped');
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                waitingTimeLeft: null
-                            });
-                        });
+                        this.handleWaitingTimerStopped(message);
                         break;
                     case 'game_started':
-                        console.log('📨 Client: Game started');
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({ 
-                                currentScreen: 'game',
-                                gameStatus: 'playing',
-                                gameMap: message.gameMap
-                            });
-                        });
+                        this.handleGameStarted(message);
                         break;
                     case 'player_moved':
                         this.handlePlayerMoved(message);
@@ -154,184 +95,34 @@ class WebSocketManager {
                         this.handleBombPlaced(message);
                         break;
                     case 'chat_message':
-                        console.log('📨 Client: Chat message from:', message.message.player);
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            updateGameState({
-                                chatMessages: [...(gameState.chatMessages || []), message.message]
-                            });
-                        });
+                        this.handleChatMessage(message);
                         break;
                     case 'error':
-                        console.error('❌ Client: Server error:', message.message);
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({
-                                currentScreen: 'nickname',
-                                nicknameError: message.message
-                            });
-                        });
+                        this.handleErrorMessage(message);
                         break;
                     case 'explosion':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const explosions = (gameState.explosions || []);
-                            let newMap = gameState.gameMap;
-                            if (gameState.gameMap && message.affectedCells) {
-                                newMap = gameState.gameMap.map((row, y) =>
-                                    row.map((cell, x) => {
-                                        if (message.affectedCells.some(c => c.x === x && c.y === y)) {
-                                            if (cell.type !== 'powerup') {
-                                                return { type: 'empty' };
-                                            }
-                                        }
-                                        return cell;
-                                    })
-                                );
-                            }
-                            const newExplosion = { 
-                                position: message.position, 
-                                affectedCells: message.affectedCells, 
-                                timestamp: Date.now() 
-                            };
-                            updateGameState({
-                                explosions: [...explosions, newExplosion],
-                                gameMap: newMap
-                            });
-                            console.log(`💥 Added explosion at`, message.position, `Total explosions:`, explosions.length + 1);
-                            setTimeout(() => {
-                                const currentState = getGameState();
-                                const updatedExplosions = (currentState.explosions || []).filter(exp => 
-                                    exp.timestamp !== newExplosion.timestamp
-                                );
-                                updateGameState({
-                                    explosions: updatedExplosions
-                                });
-                                console.log(`🧹 Cleaned up explosion at`, message.position, `Remaining explosions:`, updatedExplosions.length);
-                            }, 1200);
-                        });
+                        this.handleExplosion(message);
                         break;
                     case 'powerup_spawned':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            if (!gameState.gameMap) return;
-                            const newMap = gameState.gameMap.map((row, y) =>
-                                row.map((cell, x) =>
-                                    (x === message.position.x && y === message.position.y)
-                                        ? { type: 'powerup', power: message.power }
-                                        : cell
-                                )
-                            );
-                            updateGameState({ gameMap: newMap });
-                        });
+                        this.handlePowerupSpawned(message);
                         break;
                     case 'player_damaged':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const updatedPlayers = gameState.players.map(player => 
-                                player.id === message.playerId 
-                                    ? { ...player, lives: message.lives }
-                                    : player
-                            );
-                            updateGameState({
-                                players: updatedPlayers
-                            });
-                        });
+                        this.handlePlayerDamaged(message);
                         break;
                     case 'player_eliminated':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const updatedPlayers = gameState.players.map(player => 
-                                player.id === message.playerId 
-                                    ? { ...player, eliminated: true, lives: 0 }
-                                    : player
-                            );
-                            updateGameState({
-                                players: updatedPlayers
-                            });
-                        });
+                        this.handlePlayerEliminated(message);
                         break;
                     case 'powerup_collected':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const updatedPlayers = gameState.players.map(player => 
-                                player.id === message.playerId 
-                                    ? { ...player, ...message.playerStats }
-                                    : player
-                            );
-                            let newMap = gameState.gameMap;
-                            if (gameState.gameMap) {
-                                newMap = gameState.gameMap.map((row, y) =>
-                                    row.map((cell, x) =>
-                                        (x === message.position.x && y === message.position.y)
-                                            ? { type: 'empty' }
-                                            : cell
-                                    )
-                                );
-                            }
-                            const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
-                            let powerupNotification = null;
-                            if (localPlayer && localPlayer.id === message.playerId) {
-                                const powerupEmojis = {
-                                    'bomb': '💣',
-                                    'flame': '🔥',
-                                    'speed': '⚡'
-                                };
-                                const powerupNames = {
-                                    'bomb': 'Bomb Capacity',
-                                    'flame': 'Flame Range',
-                                    'speed': 'Movement Speed'
-                                };
-                                powerupNotification = {
-                                    emoji: powerupEmojis[message.powerType] || '🎁',
-                                    text: `${powerupNames[message.powerType] || message.powerType} +1!`
-                                };
-                                setTimeout(() => {
-                                    updateGameState({ powerupNotification: null });
-                                }, 3000);
-                            }
-                            updateGameState({
-                                players: updatedPlayers,
-                                gameMap: newMap,
-                                powerupNotification
-                            });
-                            console.log(`🎁 Power-up collected: ${message.powerType} by player ${message.playerId}`);
-                        });
+                        this.handlePowerupCollected(message);
                         break;
                     case 'bomb_removed':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const updatedBombs = (gameState.bombs || []).filter(bomb => 
-                                !(bomb.x === message.position.x && bomb.y === message.position.y)
-                            );
-                            updateGameState({
-                                bombs: updatedBombs
-                            });
-                            console.log(`💥 Bomb removed at position:`, message.position);
-                        });
+                        this.handleBombRemoved(message);
                         break;
                     case 'game_ended':
-                        import('./GameApp.js').then(({ updateGameState }) => {
-                            updateGameState({
-                                currentScreen: 'gameOver',
-                                gameStatus: 'finished',
-                                winner: message.winner,
-                                players: message.players
-                            });
-                            console.log(`🏁 Game ended! Winner:`, message.winner);
-                        });
+                        this.handleGameEnded(message);
                         break;
                     case 'powerup_used':
-                        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
-                            const gameState = getGameState();
-                            const updatedPlayers = gameState.players.map(player => 
-                                player.id === message.playerId 
-                                    ? { ...player, ...message.playerStats }
-                                    : player
-                            );
-                            updateGameState({
-                                players: updatedPlayers
-                            });
-                        });
+                        this.handlePowerupUsed(message);
                         break;
                     default:
                         console.warn('⚠️ Client: Unknown message type:', message.type);
@@ -361,22 +152,12 @@ class WebSocketManager {
         this.statusCallbacks.forEach(callback => callback(status));
     }
 
-    onConnectionStatusChange(callback) {
-        this.statusCallbacks.push(callback);
-        callback(this.connectionStatus);
-    }
-
-    getConnectionStatus() {
-        return this.connectionStatus;
-    }
-
     handleConnectionError() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-            setTimeout(() => {
-                this.connect();
-            }, this.reconnectDelay * this.reconnectAttempts);
+            const delay = this.reconnectDelay * this.reconnectAttempts;
+            console.log(`🔄 Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay}ms`);
+            setTimeout(() => this.connect(), delay);
         } else {
             console.error('❌ Max reconnection attempts reached');
             this.updateConnectionStatus('disconnected');
@@ -388,7 +169,7 @@ class WebSocketManager {
             this.ws.send(JSON.stringify(message));
         } else {
             this.messageQueue.push(message);
-            console.log('📤 Message queued, waiting for connection...');
+            console.log('📤 Message queued, waiting for connection');
         }
     }
 
@@ -399,10 +180,90 @@ class WebSocketManager {
         }
     }
 
-    handleRoomJoined(roomData) {
+    handleRoomJoined(data) {
         import('./GameApp.js').then(({ updateGameState }) => {
-            console.log('🏠 WebSocketManager: Room joined with', roomData.players.length, 'players');
-            updateGameState(roomData);
+            updateGameState({
+                currentScreen: 'waiting',
+                nicknameError: '',
+                chatMessages: data.chatHistory || [],
+                ...data
+            });
+        });
+    }
+
+    handlePlayerJoined(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            updateGameState({
+                players: [...(gameState.players || []), message.player]
+            });
+        });
+    }
+
+    handlePlayerLeft(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            updateGameState({
+                players: (gameState.players || []).filter(p => p.id !== message.playerId)
+            });
+        });
+    }
+
+    handleCountdownUpdate(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ countdown: message.countdown });
+        });
+    }
+
+    handleCountdownStarted(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                gameStatus: 'starting',
+                countdown: message.countdown
+            });
+        });
+    }
+
+    handleCountdownCancelled(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                gameStatus: 'waiting',
+                countdown: null
+            });
+        });
+    }
+
+    handleWaitingTimerStarted(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                waitingTimeLeft: message.waitingTimeLeft
+            });
+        });
+    }
+
+    handleWaitingTimerUpdate(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                waitingTimeLeft: message.waitingTimeLeft
+            });
+        });
+    }
+
+    handleWaitingTimerStopped() {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                waitingTimeLeft: null
+            });
+        });
+    }
+
+    handleGameStarted(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({ 
+                currentScreen: 'game',
+                gameStatus: 'playing',
+                gameMap: message.gameMap
+            });
         });
     }
 
@@ -421,19 +282,210 @@ class WebSocketManager {
     handleBombPlaced(message) {
         import('./GameApp.js').then(({ getGameState, updateGameState }) => {
             const gameState = getGameState();
-            const bombs = (gameState.bombs || []);
             updateGameState({
-                bombs: [...bombs, { x: message.position.x, y: message.position.y, timestamp: Date.now() }]
+                bombs: [...(gameState.bombs || []), { 
+                    x: message.position.x, 
+                    y: message.position.y, 
+                    timestamp: Date.now() 
+                }]
             });
         });
     }
 
-    sendJoinGame(nickname) {
-        console.log('📤 Client: Sending join_game for nickname:', nickname);
-        this.send({
-            type: 'join_game',
-            nickname
+    handleChatMessage(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            updateGameState({
+                chatMessages: [...(gameState.chatMessages || []), message.message]
+            });
         });
+    }
+
+    handleErrorMessage(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({
+                currentScreen: 'nickname',
+                nicknameError: message.message
+            });
+        });
+    }
+
+    handleExplosion(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            let newMap = gameState.gameMap;
+            if (gameState.gameMap && message.affectedCells) {
+                newMap = gameState.gameMap.map((row, y) =>
+                    row.map((cell, x) => {
+                        if (message.affectedCells.some(c => c.x === x && c.y === y)) {
+                            if (cell.type !== 'powerup') {
+                                return { type: 'empty' };
+                            }
+                        }
+                        return cell;
+                    })
+                );
+            }
+            const newExplosion = { 
+                position: message.position, 
+                affectedCells: message.affectedCells, 
+                timestamp: Date.now() 
+            };
+            updateGameState({
+                explosions: [...(gameState.explosions || []), newExplosion],
+                gameMap: newMap
+            });
+            setTimeout(() => {
+                const currentState = getGameState();
+                const updatedExplosions = (currentState.explosions || []).filter(exp => 
+                    exp.timestamp !== newExplosion.timestamp
+                );
+                updateGameState({
+                    explosions: updatedExplosions
+                });
+            }, 1200);
+        });
+    }
+
+    handlePowerupSpawned(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            if (!gameState.gameMap) return;
+            const newMap = gameState.gameMap.map((row, y) =>
+                row.map((cell, x) =>
+                    (x === message.position.x && y === message.position.y)
+                        ? { type: 'powerup', power: message.power }
+                        : cell
+                )
+            );
+            updateGameState({ gameMap: newMap });
+        });
+    }
+
+    handlePlayerDamaged(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const updatedPlayers = gameState.players.map(player => 
+                player.id === message.playerId 
+                    ? { ...player, lives: message.lives }
+                    : player
+            );
+            updateGameState({
+                players: updatedPlayers
+            });
+        });
+    }
+
+    handlePlayerEliminated(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const updatedPlayers = gameState.players.map(player => 
+                player.id === message.playerId 
+                    ? { ...player, eliminated: true, lives: 0 }
+                    : player
+            );
+            updateGameState({
+                players: updatedPlayers
+            });
+        });
+    }
+
+    handlePowerupCollected(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const updatedPlayers = gameState.players.map(player => 
+                player.id === message.playerId 
+                    ? { ...player, ...message.playerStats }
+                    : player
+            );
+            let newMap = gameState.gameMap;
+            if (gameState.gameMap) {
+                newMap = gameState.gameMap.map((row, y) =>
+                    row.map((cell, x) =>
+                        (x === message.position.x && y === message.position.y)
+                            ? { type: 'empty' }
+                            : cell
+                    )
+                );
+            }
+            const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
+            let powerupNotification = null;
+            if (localPlayer && localPlayer.id === message.playerId) {
+                const powerupEmojis = {
+                    'bomb': '💣',
+                    'flame': '🔥',
+                    'speed': '⚡'
+                };
+                const powerupNames = {
+                    'bomb': 'Bomb Capacity',
+                    'flame': 'Flame Range',
+                    'speed': 'Movement Speed'
+                };
+                powerupNotification = {
+                    emoji: powerupEmojis[message.powerType] || '🎁',
+                    text: `${powerupNames[message.powerType] || message.powerType} +1!`
+                };
+                setTimeout(() => {
+                    updateGameState({ powerupNotification: null });
+                }, 3000);
+            }
+            updateGameState({
+                players: updatedPlayers,
+                gameMap: newMap,
+                powerupNotification
+            });
+        });
+    }
+
+    handleBombRemoved(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const updatedBombs = (gameState.bombs || []).filter(bomb => 
+                !(bomb.x === message.position.x && bomb.y === message.position.y)
+            );
+            updateGameState({
+                bombs: updatedBombs
+            });
+        });
+    }
+
+    handleGameEnded(message) {
+        import('./GameApp.js').then(({ updateGameState }) => {
+            updateGameState({
+                currentScreen: 'gameOver',
+                gameStatus: 'finished',
+                winner: message.winner,
+                players: message.players
+            });
+        });
+    }
+
+    handlePowerupUsed(message) {
+        import('./GameApp.js').then(({ getGameState, updateGameState }) => {
+            const gameState = getGameState();
+            const updatedPlayers = gameState.players.map(player => 
+                player.id === message.playerId 
+                    ? { ...player, ...message.playerStats }
+                    : player
+            );
+            updateGameState({
+                players: updatedPlayers
+            });
+        });
+    }
+
+    // Public API
+    onConnectionStatusChange(callback) {
+        this.statusCallbacks.push(callback);
+        callback(this.connectionStatus);
+    }
+
+    getConnectionStatus() {
+        return this.connectionStatus;
+    }
+
+    sendJoinGame(nickname) {
+        this.send({ type: 'join_game', nickname });
     }
 
     startGame() {
@@ -445,7 +497,6 @@ class WebSocketManager {
     }
 
     placeBomb() {
-        console.log('📤 aaa Client: Sending place_bomb');
         this.send({ type: 'place_bomb' });
     }
 
@@ -463,26 +514,12 @@ class WebSocketManager {
         }
     }
 
-    getCurrentPlayerId() {
-        return new Promise((resolve) => {
-            import('./GameApp.js').then(({ getGameState }) => {
-                const gameState = getGameState();
-                const localPlayer = gameState.players.find(p => p.isLocal);
-                resolve(localPlayer?.id);
-            });
-        });
-    }
-
     isConnected() {
         return this.ws?.readyState === WebSocket.OPEN;
     }
 }
 
-// Create and export singleton instance
-console.log('🔌 WebSocketManager: Creating singleton instance...');
+// Singleton instance
 export const webSocketManager = new WebSocketManager();
-
-// Auto-connect when module loads
-console.log('🔌 WebSocketManager: Auto-connecting...');
 webSocketManager.connect();
 console.log('✅ WebSocketManager: Module initialization completed');

@@ -4,7 +4,7 @@ import { Vnode, render } from '../node_modules/all4one-js/index.js';
 console.log('✅ GameApp: Vnode, render imports successful');
 import { createState, effect } from '../node_modules/all4one-js/index.js';
 console.log('✅ GameApp: createState, effect imports successful');
-import { webSocketManager } from './WebSocketManager.js'; // Use the singleton WebSocketManager
+import { webSocketManager } from './WebSocketManager.js'; // Singleton WebSocket manager
 console.log('✅ GameApp: webSocketManager import successful');
 import { gameLoop } from './GameLoop.js';
 console.log('✅ GameApp: gameLoop import successful');
@@ -21,7 +21,7 @@ console.log('✅ GameApp: GameOver import successful');
 import { Chat } from './components/Chat.js';
 console.log('✅ GameApp: Chat import successful');
 
-// Phase 2: Game state management with all4one-js
+// Game state management
 console.log('🎯 GameApp: Creating state...');
 const initialState = {
     currentScreen: 'nickname', // 'nickname', 'waiting', 'game', 'gameOver'
@@ -53,7 +53,7 @@ const initialState = {
 
 export const [getGameState, setGameState] = createState(initialState);
 
-// Create a helper function to update state by merging
+// Helper function to update state by merging
 export function updateGameState(updates) {
     const currentState = getGameState();
     const newState = { ...currentState, ...updates };
@@ -63,20 +63,18 @@ export function updateGameState(updates) {
 
 console.log('✅ GameApp: State created successfully');
 
-// Phase 2: Initialize connection status monitoring
+// WebSocket connection monitoring
 console.log('🔌 GameApp: Setting up WebSocket connection monitoring...');
 webSocketManager.onConnectionStatusChange((status) => {
     console.log('📡 GameApp: Connection status changed to:', status);
     updateGameState({ connectionStatus: status });
 });
 
-// Phase 3: Initialize game loop and performance monitoring
+// Game loop and performance monitoring setup
 console.log('🎮 GameApp: Setting up game loop and performance monitoring...');
-
-// Start game loop when app initializes
 gameLoop.start();
 
-// Add performance monitoring callback
+// Performance monitoring callback
 gameLoop.addUpdateCallback(() => {
     const stats = gameLoop.getStats();
     updateGameState({
@@ -89,7 +87,7 @@ gameLoop.addUpdateCallback(() => {
     });
 });
 
-// Add explosion cleanup callback
+// Explosion cleanup callback
 gameLoop.addUpdateCallback(() => {
     const gameState = getGameState();
     if (gameState.explosions && gameState.explosions.length > 0) {
@@ -117,6 +115,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Player movement control variables
 let moveInterval = null;
 let currentDirection = null;
 const keyToDirection = {
@@ -126,15 +125,16 @@ const keyToDirection = {
     ArrowRight: 'right',
 };
 
+// Movement control functions
 function startMoving(direction, speed) {
-    if (moveInterval) return; // already moving
+    if (moveInterval) return; // Already moving
 
-    sendMove(direction); // instant first move
+    sendMove(direction); // Instant first move
 
-    // movement delay in ms: the higher the speed, the faster the player
+    // Movement delay calculation based on speed
     const baseDelay = 250;
     const speedFactor = 40;
-    const delay = Math.max(60, baseDelay - speed * speedFactor); // delay based on speed
+    const delay = Math.max(60, baseDelay - speed * speedFactor);
 
     currentDirection = direction;
 
@@ -158,11 +158,10 @@ function sendMove(direction) {
     const localPlayer = gameState.players.find(p => p.nickname === gameState.nickname);
     if (!localPlayer || localPlayer.eliminated) return;
 
-    // Use the webSocketManager to send the move
     webSocketManager.movePlayer(direction);
 }
 
-// Movement key handlers
+// Keyboard event listeners for movement
 window.addEventListener('keydown', (e) => {
     if (!keyToDirection[e.key]) return;
 
@@ -184,15 +183,15 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-// Bomb placement key handler - Spacebar triggers bomb placement
+// Bomb placement handler (Spacebar)
 window.addEventListener('keydown', (e) => {
     if (e.key === ' ') { // Spacebar
-        e.preventDefault(); // prevent page scroll
+        e.preventDefault(); // Prevent page scroll
         handlePlaceBomb();
     }
 });
 
-// Phase 2: Main application component
+// Main application component
 export function GameApp() {
     console.log('🎮 GameApp: Function called, getting state...');
     const gameState = getGameState();
@@ -200,6 +199,7 @@ export function GameApp() {
     
     console.log('🎨 GameApp: Building Vnode tree...');
     const result = Vnode('div', { class: 'game-app' }, [
+        // Header with connection status
         Vnode('div', { class: 'game-header' }, [
             Vnode('h1', {}, 'Bomberman Multiplayer'),
             Vnode('div', { class: 'connection-status' }, [
@@ -253,7 +253,7 @@ export function GameApp() {
             ])
         ]),
         
-        // Phase 2: Render different screens based on current state
+        // Screen rendering based on current state
         gameState.currentScreen === 'nickname' && (() => {
             console.log('📝 GameApp: Rendering NicknameEntry...');
             return NicknameEntry();
@@ -278,14 +278,14 @@ export function GameApp() {
     return result;
 }
 
-// Phase 2: Event handlers
+// Event handlers
 export function handleNicknameSubmit(nickname) {
     setGameState({ 
         nickname,
         currentScreen: 'waiting'
     });
     
-    // Phase 3: Connect to WebSocket and join game
+    // Connect to WebSocket and join game
     webSocketManager.sendJoinGame(nickname);
 }
 
@@ -360,9 +360,3 @@ export function handleBackToMenu() {
         explosions: []
     });
 }
-
-// Phase 2: Initialize app (uncomment to enable)
-// document.addEventListener('DOMContentLoaded', () => {
-//     console.log('🎮 Bomberman DOM Game - Phase 2 Initialized');
-//     render(() => GameApp(), document.getElementById('app'));
-// }); 
