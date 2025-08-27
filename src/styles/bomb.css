@@ -1,31 +1,20 @@
 .Bomb {
     position: absolute;
-    background: url(../assets/bomb.png) center center no-repeat;
-    background-size: contain;
-    border-radius: 50%;
-    border: 2px solid orange;
+    width: 35px;
+    height: 35px;
     z-index: 1;
     animation: thump 1s infinite;
 }
 
-.Bomb.Explosion {
-    background-color: orange;
-    border-radius: 50%;
-    border: 2px solid red;
-    z-index: 2;
-    animation: explode 1s steps(10, end) forwards;
-    background-size: contain;
-    background-repeat: no-repeat;
-}
-
 .Explosion {
-    background-color: orange;
-    border-radius: 50%;
-    border: 2px solid red;
+    position: absolute;
+    width: 35px;
+    height: 35px;
     z-index: 2;
     animation: explode 1s steps(10, end) forwards;
     background-size: contain;
     background-repeat: no-repeat;
+    pointer-events: none;
 }
 
 @keyframes thump {

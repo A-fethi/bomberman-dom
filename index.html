@@ -3,10 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bomberman Game</title>
-    <link rel="stylesheet" href="./src/styles/style.css">
+    <title>Bomberman Multiplayer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💣</text></svg>">
+    <link rel="stylesheet" href="src/styles/style.css">
+    <link rel="stylesheet" href="src/styles/menu.css">
+    <link rel="stylesheet" href="src/styles/multiplayer.css">
+    <link rel="stylesheet" href="src/styles/player.css">
+    <link rel="stylesheet" href="src/styles/map.css">
+    <link rel="stylesheet" href="src/styles/bomb.css">
+    <link rel="stylesheet" href="src/styles/scoreboard.css">
 </head>
 <body>
-    <script src="./src/game.js" type="module"></script>
+    <div id="app"></div>
+    <script type="module">
+        import { Vnode, render } from './node_modules/all4one-js/index.js';
+        import { createState, effect } from './node_modules/all4one-js/index.js';
+        import { GameApp } from './src/GameApp.js';
+        
+        render(() => GameApp(), document.getElementById('app'));
+    </script>
 </body>
 </html>
